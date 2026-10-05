@@ -1,3 +1,3 @@
 Rails.application.routes.draw do
-  mount HubKernel::Api::Engine => "/hub_kernel-api"
+  mount HubKernel::Api::Engine => "/hubs"
 end
