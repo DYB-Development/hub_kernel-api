@@ -59,4 +59,10 @@ class HubCallsTest < ActionDispatch::IntegrationTest
 
     assert_equal({ "error" => "No item has the id 9" }, response.parsed_body)
   end
+
+  test "a caller the host's base controller refuses is refused before any hub method runs" do
+    get "/hubs/shop/price_of", params: { item: "soap" }, as: :json
+
+    assert_response :unauthorized
+  end
 end
