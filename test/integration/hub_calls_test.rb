@@ -65,4 +65,15 @@ class HubCallsTest < ActionDispatch::IntegrationTest
 
     assert_response :unauthorized
   end
+
+  test "every call is made for the person and the account the host's methods give" do
+    allowing, asked = HubKernel::Authz.check, []
+    HubKernel::Authz.check = ->(person, _action, account) { asked << [ person, account ] && true }
+
+    get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_equal [ [ "sam", "acme" ] ], asked
+  ensure
+    HubKernel::Authz.check = allowing
+  end
 end
