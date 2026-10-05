@@ -11,7 +11,7 @@ module HubKernel
 
       private
 
-      def hub = HubKernel::Api.find(params[:hub])
+      def hub = HubKernel::Api.find(params[:hub]) || raise(ActionController::RoutingError, "Not found")
 
       def values = request.query_parameters.merge(request.request_parameters).deep_symbolize_keys
     end

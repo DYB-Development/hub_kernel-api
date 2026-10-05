@@ -18,4 +18,10 @@ class HubCallsTest < ActionDispatch::IntegrationTest
 
     assert_equal({ "error" => "Not found" }, response.parsed_body)
   end
+
+  test "a hub that is not listed is answered with status 404" do
+    get "/hubs/bakery/price_of", params: { item: "bread" }, headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_response :not_found
+  end
 end
