@@ -1,7 +1,7 @@
 module HubKernel
   module Api
     class HubCallsController < HubKernel::Api.base_controller.constantize
-      rescue_from(ActionController::RoutingError) { render json: { error: "Not found" }, status: :not_found }
+      rescue_from(ActionController::RoutingError, HubKernel::NotAllowed) { render json: { error: "Not found" }, status: :not_found }
 
       def answer
         raise ActionController::RoutingError, "Not found" unless hub.exposed(params[:name])&.writes == request.post?

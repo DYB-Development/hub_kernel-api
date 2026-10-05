@@ -30,4 +30,15 @@ class HubCallsTest < ActionDispatch::IntegrationTest
 
     assert_equal({ "error" => "Not found" }, response.parsed_body)
   end
+
+  test "a call the host's permission check refuses is answered as not found" do
+    allowing = HubKernel::Authz.check
+    HubKernel::Authz.check = ->(*) { false }
+
+    get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_equal({ "error" => "Not found" }, response.parsed_body)
+  ensure
+    HubKernel::Authz.check = allowing
+  end
 end
