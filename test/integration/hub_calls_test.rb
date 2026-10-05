@@ -41,4 +41,10 @@ class HubCallsTest < ActionDispatch::IntegrationTest
   ensure
     HubKernel::Authz.check = allowing
   end
+
+  test "a hub's refusal is answered with its reason under error" do
+    post "/hubs/shop/restock", params: { item: "ice" }, headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_equal({ "error" => "The ice shelf is full" }, response.parsed_body)
+  end
 end

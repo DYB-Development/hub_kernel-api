@@ -7,5 +7,9 @@ module Shop
 
   exposes :restock, takes: %i[item], writes: true
 
-  def self.restock(item:) = "#{item} restocked"
+  def self.restock(item:)
+    raise HubKernel::Refused, "The #{item} shelf is full" if item == "ice"
+
+    "#{item} restocked"
+  end
 end
