@@ -12,4 +12,10 @@ class HubCallsTest < ActionDispatch::IntegrationTest
 
     assert_equal({ "error" => "Not found" }, response.parsed_body)
   end
+
+  test "a read asked for with POST is answered as not found" do
+    post "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_equal({ "error" => "Not found" }, response.parsed_body)
+  end
 end

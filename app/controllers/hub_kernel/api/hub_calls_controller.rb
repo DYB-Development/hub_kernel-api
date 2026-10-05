@@ -4,7 +4,7 @@ module HubKernel
       rescue_from(ActionController::RoutingError) { render json: { error: "Not found" }, status: :not_found }
 
       def answer
-        raise ActionController::RoutingError, "Not found" if hub.exposed(params[:name]).writes && request.get?
+        raise ActionController::RoutingError, "Not found" unless hub.exposed(params[:name]).writes == request.post?
 
         render json: { answer: hub.call_exposed(params[:name], values: values, person: send(HubKernel::Api.person_method), account: send(HubKernel::Api.account_method)) }
       end
