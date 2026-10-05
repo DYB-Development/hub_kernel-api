@@ -1,0 +1,35 @@
+module HubKernel
+  module Api
+    class HubCallsController < HubKernel::Api.base_controller.constantize
+      rescue_from ActionController::RoutingError, HubKernel::NotAllowed, with: :not_found
+      rescue_from HubKernel::Refused, HubKernel::MissingArgumentError, with: :refused
+      rescue_from ActiveRecord::RecordNotFound, with: :missing_record
+
+      def answer
+        raise ActionController::RoutingError, "Not found" unless asked_with_the_right_verb?
+
+        render json: { answer: hub.call_exposed(params[:name], values: values, person: caller_person, account: caller_account) }
+      end
+
+      private
+
+      def hub = @hub ||= HubKernel::Api.find(params[:hub]) || raise(ActionController::RoutingError, "Not found")
+
+      def asked_with_the_right_verb? = hub.exposed(params[:name])&.writes == request.post?
+
+      def values = request.query_parameters.merge(request.request_parameters).deep_symbolize_keys
+
+      def caller_person = send(HubKernel::Api.person_method)
+
+      def caller_account = send(HubKernel::Api.account_method)
+
+      def not_found = render(json: { error: "Not found" }, status: :not_found)
+
+      def refused(refusal) = render(json: { error: refusal.message }, status: :unprocessable_content)
+
+      def missing_record(missing)
+        render json: { error: "No #{missing.model.demodulize.underscore.humanize(capitalize: false)} has the id #{missing.id}" }, status: :not_found
+      end
+    end
+  end
+end
