@@ -24,4 +24,10 @@ class HubCallsTest < ActionDispatch::IntegrationTest
 
     assert_response :not_found
   end
+
+  test "a method the hub does not expose is answered as not found" do
+    get "/hubs/shop/close_shop", headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_equal({ "error" => "Not found" }, response.parsed_body)
+  end
 end
