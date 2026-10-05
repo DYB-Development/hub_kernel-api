@@ -3,6 +3,7 @@ module HubKernel
     class HubCallsController < HubKernel::Api.base_controller.constantize
       rescue_from(ActionController::RoutingError, HubKernel::NotAllowed) { render json: { error: "Not found" }, status: :not_found }
       rescue_from(HubKernel::Refused, HubKernel::MissingArgumentError) { |refusal| render json: { error: refusal.message }, status: :unprocessable_content }
+      rescue_from(ActiveRecord::RecordNotFound) { |missing| render json: { error: "No #{missing.model.demodulize.underscore.humanize(capitalize: false)} has the id #{missing.id}" }, status: :not_found }
 
       def answer
         raise ActionController::RoutingError, "Not found" unless hub.exposed(params[:name])&.writes == request.post?

@@ -12,4 +12,8 @@ module Shop
 
     "#{item} restocked"
   end
+
+  exposes :stock_of, takes: %i[item_id], writes: false
+
+  def self.stock_of(item_id:) = raise(ActiveRecord::RecordNotFound.new("Couldn't find Shelf item", "Shelf::Item", "id", item_id))
 end

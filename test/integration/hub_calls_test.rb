@@ -53,4 +53,10 @@ class HubCallsTest < ActionDispatch::IntegrationTest
 
     assert_response :unprocessable_content
   end
+
+  test "a call naming a record that does not exist is answered with the record and the id" do
+    get "/hubs/shop/stock_of", params: { item_id: 9 }, headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_equal({ "error" => "No item has the id 9" }, response.parsed_body)
+  end
 end
