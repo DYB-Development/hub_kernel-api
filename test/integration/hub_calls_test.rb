@@ -47,4 +47,10 @@ class HubCallsTest < ActionDispatch::IntegrationTest
 
     assert_equal({ "error" => "The ice shelf is full" }, response.parsed_body)
   end
+
+  test "a call missing a value the method requires is answered with status 422" do
+    get "/hubs/shop/price_of", headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_response :unprocessable_content
+  end
 end
