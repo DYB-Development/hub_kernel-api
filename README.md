@@ -43,6 +43,7 @@ return value under `answer`.
 | The method answers | 200 | `{"answer": ...}` |
 | The hub is not served, the method is not exposed, the verb is wrong, or the host's permission check refuses | 404 | `{"error": "Not found"}` |
 | The hub refuses, or a required value is missing | 422 | `{"error": "<reason>"}` |
+| A permitted call sends a value the method is not listed with | 422 | `{"error": "<method> does not take <values>"}` |
 | A record the call names does not exist | 404 | `{"error": "No <record> has the id <id>"}` |
 
 ## Installation

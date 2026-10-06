@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-06
+
+### Changed
+- A permitted call sending a value its method is not listed with is answered with status 422 naming each such value, where the value used to be dropped. A caller the permission check refuses is still answered as not found.
+- hub_kernel-api requires hub_kernel 0.18.
+
 ## [0.2.0] - 2026-10-06
 
 ### Added
