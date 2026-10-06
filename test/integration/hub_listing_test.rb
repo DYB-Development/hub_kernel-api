@@ -23,4 +23,10 @@ class HubListingTest < ActionDispatch::IntegrationTest
 
     assert_equal({ "error" => "Not found" }, response.parsed_body)
   end
+
+  test "a caller the host's sign-in refuses is shown nothing" do
+    get "/hubs/shop", as: :json
+
+    assert_empty response.body
+  end
 end
