@@ -17,8 +17,14 @@ HubKernel::Api.account_method = :current_account
 
 Rails.application.config.to_prepare do
   HubKernel::Api.hubs = [ Supplies ]
+  HubKernel::Api.check!
 end
 ```
+
+`HubKernel::Api.check!` raises `HubKernel::Api::UnservableHubError` when a served entry
+exposes no methods, when two served hubs answer at the same address, or when a served
+hub's exposed list has a problem, naming each. Inside `to_prepare` it runs again after
+every code reload.
 
 The base controller's own sign-in runs before every call. hub_kernel's permission check
 and account scope must also be set, as hub_kernel's readme describes. Mount the engine:
