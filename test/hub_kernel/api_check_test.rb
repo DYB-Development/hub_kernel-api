@@ -34,4 +34,10 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
 
     assert_raises(HubKernel::Api::UnservableHubError, match: "Cellar exposes count_bottles, which it has no method for") { HubKernel::Api.check! }
   end
+
+  test "a correct served-hub list starts" do
+    HubKernel::Api.hubs = [ Shop, { "store" => Shop } ]
+
+    assert_nothing_raised { HubKernel::Api.check! }
+  end
 end
