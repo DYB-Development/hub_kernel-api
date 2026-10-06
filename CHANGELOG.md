@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-06
+
+### Added
+- hub_kernel-api is a the_local provider: installing it gives an app its info, install and develop agents.
+
 ## [0.5.0] - 2026-10-06
 
 ### Added
