@@ -28,7 +28,14 @@ mount HubKernel::Api::Engine => "/api/v1/hubs"
 ```
 
 Each exposed method answers at `/<hub>/<method>`, where `<hub>` is the hub's module name
-underscored. A read answers GET and a write answers POST, and the answer is the method's
+underscored. To answer at a name of the host's choosing, list the hub as a one-pair hash:
+
+```ruby
+HubKernel::Api.hubs = [ Supplies, { "money" => Billing::Ledger } ]
+```
+
+A hub listed this way answers only at the name given, and the permission check is still
+asked about it by its own name, such as `ledger:record_spend`. A read answers GET and a write answers POST, and the answer is the method's
 return value under `answer`.
 
 | Case | Status | Body |

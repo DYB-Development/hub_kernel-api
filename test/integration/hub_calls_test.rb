@@ -76,4 +76,38 @@ class HubCallsTest < ActionDispatch::IntegrationTest
   ensure
     HubKernel::Authz.check = allowing
   end
+
+  test "a hub listed with an address name answers at that name" do
+    served = HubKernel::Api.hubs
+    HubKernel::Api.hubs = [ { "store" => Shop } ]
+
+    get "/hubs/store/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_equal({ "answer" => "soap costs 3" }, response.parsed_body)
+  ensure
+    HubKernel::Api.hubs = served
+  end
+
+  test "a hub listed with an address name no longer answers at its module name" do
+    served = HubKernel::Api.hubs
+    HubKernel::Api.hubs = [ { "store" => Shop } ]
+
+    get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_response :not_found
+  ensure
+    HubKernel::Api.hubs = served
+  end
+
+  test "the permission check is asked about the hub's own name whatever address it answers at" do
+    served, allowing, asked = HubKernel::Api.hubs, HubKernel::Authz.check, []
+    HubKernel::Api.hubs = [ { "store" => Shop } ]
+    HubKernel::Authz.check = ->(_person, action, _account) { asked << action && true }
+
+    get "/hubs/store/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_equal [ "shop:price_of" ], asked
+  ensure
+    HubKernel::Api.hubs, HubKernel::Authz.check = served, allowing
+  end
 end

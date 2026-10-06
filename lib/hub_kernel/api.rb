@@ -9,6 +9,8 @@ module HubKernel
     mattr_accessor :person_method
     mattr_accessor :account_method
 
-    def self.find(name) = hubs.find { |hub| hub.name.demodulize.underscore == name }
+    def self.find(name) = addresses[name]
+
+    def self.addresses = hubs.reduce({}) { |found, entry| found.merge(entry.is_a?(Hash) ? entry : { entry.name.demodulize.underscore => entry }) }
   end
 end
