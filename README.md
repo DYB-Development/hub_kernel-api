@@ -38,6 +38,16 @@ A hub listed this way answers only at the name given, and the permission check i
 asked about it by its own name, such as `ledger:record_spend`. A read answers GET and a write answers POST, and the answer is the method's
 return value under `answer`.
 
+A GET at a served hub's own address, `/<hub>`, lists the methods the caller may call on
+the account the host names, each with its name, the values it takes and its verb:
+
+```json
+[{ "name": "price_of", "takes": ["item"], "verb": "GET" }]
+```
+
+A hub that is not served is answered as not found, and a caller the host's sign-in refuses
+is shown nothing.
+
 | Case | Status | Body |
 | --- | --- | --- |
 | The method answers | 200 | `{"answer": ...}` |
