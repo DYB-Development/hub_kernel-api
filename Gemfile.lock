@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    hub_kernel-api (0.2.0)
+    hub_kernel-api (0.3.0)
       hub_kernel (~> 0.18)
       rails (>= 8.1.3)
 
