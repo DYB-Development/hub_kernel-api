@@ -116,4 +116,15 @@ class HubCallsTest < ActionDispatch::IntegrationTest
 
     assert_equal({ "error" => "restock does not take colour" }, response.parsed_body)
   end
+
+  test "a refused caller sending a value the method is not listed with is answered as not found" do
+    allowing = HubKernel::Authz.check
+    HubKernel::Authz.check = ->(*) { false }
+
+    post "/hubs/shop/restock", params: { item: "soap", colour: "red" }, headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_equal({ "error" => "Not found" }, response.parsed_body)
+  ensure
+    HubKernel::Authz.check = allowing
+  end
 end
