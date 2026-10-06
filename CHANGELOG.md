@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-06
+
+### Added
+- A GET at a served hub's address, `/<hub>`, lists the methods the caller may call on the account the host names, each with its name, the values it takes and its verb.
+
 ## [0.3.0] - 2026-10-06
 
 ### Changed
