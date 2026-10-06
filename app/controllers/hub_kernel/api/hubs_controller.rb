@@ -1,15 +1,13 @@
 module HubKernel
   module Api
-    class HubsController < HubKernel::Api.base_controller.constantize
-      rescue_from(ActionController::RoutingError) { render json: { error: "Not found" }, status: :not_found }
-
+    class HubsController < HubController
       def show
-        render json: hub.exposures_for(person: send(HubKernel::Api.person_method), account: send(HubKernel::Api.account_method)).map { |exposure| { name: exposure.name, takes: exposure.takes, verb: exposure.writes ? "POST" : "GET" } }
+        render json: hub.exposures_for(person: caller_person, account: caller_account).map { |exposure| listed(exposure) }
       end
 
       private
 
-      def hub = HubKernel::Api.find(params[:hub]) || raise(ActionController::RoutingError, "Not found")
+      def listed(exposure) = { name: exposure.name, takes: exposure.takes, verb: exposure.writes ? "POST" : "GET" }
     end
   end
 end
