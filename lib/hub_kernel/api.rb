@@ -14,7 +14,7 @@ module HubKernel
     def self.find(name) = addresses[name]
 
     def self.check!
-      problems = unexposed_hubs + shared_addresses
+      problems = unexposed_hubs + shared_addresses + exposure_problems
       raise UnservableHubError, problems.join("\n") if problems.any?
     end
 
@@ -29,6 +29,8 @@ module HubKernel
         "#{entries.map { |_address, hub| hub.name }.join(" and ")} both answer at #{address}"
       end
     end
-    private_class_method :served, :unexposed_hubs, :shared_addresses
+
+    def self.exposure_problems = served.map(&:last).select { |hub| hub.respond_to?(:exposure_problems) }.flat_map(&:exposure_problems)
+    private_class_method :served, :unexposed_hubs, :shared_addresses, :exposure_problems
   end
 end

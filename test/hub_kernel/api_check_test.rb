@@ -8,6 +8,12 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
     extend HubKernel::Exposes
   end
 
+  module Cellar
+    extend HubKernel::Exposes
+
+    exposes :count_bottles, takes: [], writes: false
+  end
+
   setup { @served = HubKernel::Api.hubs }
   teardown { HubKernel::Api.hubs = @served }
 
@@ -21,5 +27,11 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
     HubKernel::Api.hubs = [ Shop, { "shop" => Pantry } ]
 
     assert_raises(HubKernel::Api::UnservableHubError, match: "Shop and HubKernel::ApiCheckTest::Pantry both answer at shop") { HubKernel::Api.check! }
+  end
+
+  test "a served hub whose exposed list has a problem stops the app and the problem is named" do
+    HubKernel::Api.hubs = [ Cellar ]
+
+    assert_raises(HubKernel::Api::UnservableHubError, match: "Cellar exposes count_bottles, which it has no method for") { HubKernel::Api.check! }
   end
 end
