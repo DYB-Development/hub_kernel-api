@@ -17,4 +17,10 @@ class HubListingTest < ActionDispatch::IntegrationTest
   ensure
     HubKernel::Authz.check = allowing
   end
+
+  test "a hub that is not served is answered as not found" do
+    get "/hubs/bakery", headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_equal({ "error" => "Not found" }, response.parsed_body)
+  end
 end
