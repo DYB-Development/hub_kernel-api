@@ -76,4 +76,15 @@ class HubCallsTest < ActionDispatch::IntegrationTest
   ensure
     HubKernel::Authz.check = allowing
   end
+
+  test "a hub listed with an address name answers at that name" do
+    served = HubKernel::Api.hubs
+    HubKernel::Api.hubs = [ { "store" => Shop } ]
+
+    get "/hubs/store/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_equal({ "answer" => "soap costs 3" }, response.parsed_body)
+  ensure
+    HubKernel::Api.hubs = served
+  end
 end
