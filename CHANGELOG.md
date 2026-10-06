@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-06
+
+### Added
+- An entry in `HubKernel::Api.hubs` may be a one-pair hash of an address name to a hub, which then answers at that name instead of its module name.
+
 ## [0.1.0] - 2026-10-04
 
 ### Added
