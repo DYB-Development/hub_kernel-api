@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-06
+
+### Added
+- `HubKernel::Api.check!`, which raises `HubKernel::Api::UnservableHubError` naming a served entry that exposes no methods, two served hubs at the same address, and each problem with a served hub's exposed list.
+
 ## [0.4.0] - 2026-10-06
 
 ### Added
