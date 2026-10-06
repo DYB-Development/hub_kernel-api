@@ -20,5 +20,5 @@ Gem::Specification.new do |spec|
   end
 
   spec.add_dependency "rails", ">= 8.1.3"
-  spec.add_dependency "hub_kernel", "~> 0.11"
+  spec.add_dependency "hub_kernel", "~> 0.18"
 end
