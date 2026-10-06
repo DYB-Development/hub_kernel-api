@@ -110,4 +110,10 @@ class HubCallsTest < ActionDispatch::IntegrationTest
   ensure
     HubKernel::Api.hubs, HubKernel::Authz.check = served, allowing
   end
+
+  test "a permitted call sending a value the method is not listed with is answered with an error naming it" do
+    post "/hubs/shop/restock", params: { item: "soap", colour: "red" }, headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_equal({ "error" => "restock does not take colour" }, response.parsed_body)
+  end
 end
