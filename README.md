@@ -1,8 +1,9 @@
 # hub_kernel-api
 
 Serves a hub_kernel hub's exposed methods as a JSON API. The host lists the hubs it
-serves, and every call goes through the host's own sign-in, then hub_kernel's permission
-check and account scope.
+serves, and every call goes through the host's own sign-in, then the permission check and
+account scope that hub_kernel-interface holds. It depends on hub_kernel-interface alone, not
+on hub_kernel.
 
 ## Usage
 
@@ -26,8 +27,9 @@ exposes no methods, when two served hubs answer at the same address, or when a s
 hub's exposed list has a problem, naming each. Inside `to_prepare` it runs again after
 every code reload.
 
-The base controller's own sign-in runs before every call. hub_kernel's permission check
-and account scope must also be set, as hub_kernel's readme describes. Mount the engine:
+The base controller's own sign-in runs before every call. The permission check and account
+scope must also be set, `HubKernel::Authz.check` and `HubKernel::Context.scope`, as
+hub_kernel-interface's readme describes. Mount the engine:
 
 ```ruby
 mount HubKernel::Api::Engine => "/api/v1/hubs"
