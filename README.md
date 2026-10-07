@@ -27,6 +27,10 @@ exposes no methods, when two served hubs answer at the same address, or when a s
 hub's exposed list has a problem, naming each. Inside `to_prepare` it runs again after
 every code reload.
 
+`HubKernel::Api.hubs` reads and writes hub_kernel-interface's one served list,
+`HubKernel::Interface.hubs`, so every interface gem in the host, such as hub_kernel-mcp,
+serves the same hubs at the same names. The list is set once, through either gem.
+
 The base controller's own sign-in runs before every call. The permission check and account
 scope must also be set, `HubKernel::Authz.check` and `HubKernel::Context.scope`, as
 hub_kernel-interface's readme describes. Mount the engine:
