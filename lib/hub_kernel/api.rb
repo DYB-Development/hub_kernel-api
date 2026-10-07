@@ -6,7 +6,12 @@ module HubKernel
   module Api
     class UnservableHubError < StandardError; end
 
-    mattr_accessor :hubs, default: []
+    def self.hubs = HubKernel::Interface.hubs
+
+    def self.hubs=(hubs)
+      HubKernel::Interface.hubs = hubs
+    end
+
     mattr_accessor :base_controller, default: "ActionController::API"
     mattr_accessor :person_method
     mattr_accessor :account_method
