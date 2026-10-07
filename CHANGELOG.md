@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-07
+
+### Changed
+- `HubKernel::Api.hubs` reads and writes hub_kernel-interface's one served list, so hub_kernel-api and hub_kernel-mcp serve the same hubs from one setting.
+- `HubKernel::Api.check!` runs hub_kernel-interface's check, and `HubKernel::Api::UnservableHubError` is another name for its error.
+- A call sending a value its method is not listed with asks the permission check once, about that method alone.
+- hub_kernel-api requires hub_kernel-interface 0.6.
+
 ## [0.7.0] - 2026-10-06
 
 ### Changed
