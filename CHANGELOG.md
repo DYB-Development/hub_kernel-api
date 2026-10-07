@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-06
+
+### Changed
+- hub_kernel-api depends on hub_kernel-interface in place of hub_kernel, so an app serving hubs no longer installs hub_kernel through it.
+
 ## [0.6.0] - 2026-10-06
 
 ### Added

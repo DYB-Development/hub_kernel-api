@@ -2,7 +2,7 @@
 name: hub_kernel-api-info
 description: Use to learn what hub_kernel-api offers — serving a hub's exposed methods as a JSON API, the served hubs and their addresses, reads and writes, and how sign-in, permission and account scope apply to each call.
 tools: Read
-scope: hub JSON API — serving a hub_kernel hub's exposed methods as a JSON API in a host Rails app, each call behind the host's own sign-in and hub_kernel's permission check and account scope
+scope: hub JSON API — serving a hub_kernel hub's exposed methods as a JSON API in a host Rails app, each call behind the host's own sign-in and hub_kernel-interface's permission check and account scope
 ---
 
 This local explains hub_kernel-api and makes no changes.
@@ -15,10 +15,13 @@ gem answers HTTP calls to their exposed methods and to a listing of them. It add
 business logic of its own: every answer is the return value of a method the hub
 already exposes.
 
+It depends on hub_kernel-interface alone, not on hub_kernel. hub_kernel-interface
+holds the permission check and the account scope, and the host sets both.
+
 Reach for it when a hub's exposed methods need to be called over HTTP, by a mobile
 app, another service or a front end, without writing a controller per method. Each
-call runs the host's own sign-in first, then hub_kernel's permission check and
-account scope, so the API never shows a caller more than the app itself would.
+call runs the host's own sign-in first, then hub_kernel-interface's permission check
+and account scope, so the API never shows a caller more than the app itself would.
 
 ## Interface
 
@@ -40,8 +43,8 @@ This local declares no commands. The surface is split between the other two loca
 
 ## Conventions
 
-- **Hub** — a hub_kernel module whose methods are declared as exposed. Only exposed
-  methods are reachable; nothing else on the hub is.
+- **Hub** — a module whose methods are declared as exposed through
+  hub_kernel-interface. Only exposed methods are reachable; nothing else on the hub is.
 - **Served hub** — a hub the host has listed for the API. A hub that is not served is
   answered as not found, as if it did not exist.
 - **Address** — the name a served hub answers at. By default it is the hub's module

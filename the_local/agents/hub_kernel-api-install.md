@@ -2,7 +2,7 @@
 name: hub_kernel-api-install
 description: Use to hook hub_kernel-api into a project — adding the gem, naming the base controller and its person and account methods, listing the served hubs, running the startup check, and mounting the engine.
 tools: Bash, Read, Edit
-scope: hub JSON API — serving a hub_kernel hub's exposed methods as a JSON API in a host Rails app, each call behind the host's own sign-in and hub_kernel's permission check and account scope
+scope: hub JSON API — serving a hub_kernel hub's exposed methods as a JSON API in a host Rails app, each call behind the host's own sign-in and hub_kernel-interface's permission check and account scope
 ---
 
 This local follows the steps below exactly and invents none. Where a step names a
@@ -10,12 +10,13 @@ decision, it asks the developer and does not pick.
 
 ## What hub_kernel-api is
 
-A Rails engine that serves the exposed methods of hub_kernel hubs as a JSON API; hook it
+A Rails engine that serves the exposed methods of hub_kernel hubs as a JSON API. Hook it
 in when a Rails app needs its hubs callable over HTTP.
 
 ## Interface
 
-- `gem "hub_kernel-api"` — the Gemfile line that adds the gem; it brings hub_kernel with it.
+- `gem "hub_kernel-api"` — the Gemfile line that adds the gem; it brings
+  hub_kernel-interface with it, and not hub_kernel.
 - `HubKernel::Api.base_controller=` — the name, as a String, of the host controller the
   API's controllers inherit from; defaults to `"ActionController::API"`.
 - `HubKernel::Api.person_method=` — the name, as a Symbol, of the method on the base
@@ -37,10 +38,11 @@ in when a Rails app needs its hubs callable over HTTP.
    gem "hub_kernel-api"
    ```
 
-2. Confirm hub_kernel's permission check and account scope are already configured in
-   the host. Every call is checked and scoped by them. If the host has a hub_kernel
-   install local, use it for this; otherwise stop and ask the developer how they are
-   set, and do not configure them from guesswork.
+2. Confirm the permission check and account scope that hub_kernel-interface holds are
+   already set in the host: `HubKernel::Authz.check` and `HubKernel::Context.scope`.
+   Every call is checked and scoped by them. If the host has a hub_kernel-interface
+   install local, use it for this. Otherwise stop and ask the developer how they are
+   set, and do not set them from guesswork.
 
 3. Ask the developer which controller the API inherits from. It must:
    - run the host's sign-in before every action, as a `before_action` that refuses an
@@ -56,8 +58,7 @@ in when a Rails app needs its hubs callable over HTTP.
 4. Ask the developer which hubs to serve and at what address each answers. A hub module
    answers at its module name underscored, so `Supplies` answers at `supplies`. To use a
    different address, the hub is listed as a one-pair Hash, `{ "money" => Billing::Ledger }`.
-   Every listed hub must be a hub_kernel hub that exposes methods, and no two may share
-   an address.
+   Every listed hub must expose methods, and no two may share an address.
 
 5. Create `config/initializers/hub_kernel_api.rb` with the answers from steps 3 and 4:
 
@@ -88,11 +89,11 @@ in when a Rails app needs its hubs callable over HTTP.
 7. Boot the app, for example with `bin/rails runner "puts :ok"`. A
    `HubKernel::Api::UnservableHubError` at boot names each problem:
    - `<Hub> exposes no methods to serve` — the entry is not a hub with exposed methods;
-     remove it, or expose methods on it in hub_kernel.
+     remove it, or expose methods on it.
    - `<Hub> and <Hub> both answer at <address>` — give one of them its own address with
      a one-pair Hash.
-   - Any other line is a problem with that hub's list of exposed methods, reported by
-     hub_kernel; fix it in the hub.
+   - Any other line is a problem the hub reports with its own list of exposed methods;
+     fix it in the hub.
 
 ## Conventions
 
@@ -102,5 +103,7 @@ in when a Rails app needs its hubs callable over HTTP.
 - An edit to the initializer takes effect only after the server restarts.
 - Keep `HubKernel::Api.check!` in the initializer; without it a hub that cannot be served
   is found only when a client calls it.
+- Setting the permission check and account scope is out of scope here; it belongs to
+  hub_kernel-interface.
 - Calling the API, its responses and its error statuses are out of scope here; they
   belong to the develop local.

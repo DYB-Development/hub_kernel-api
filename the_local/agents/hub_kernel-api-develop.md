@@ -2,7 +2,7 @@
 name: hub_kernel-api-develop
 description: Use PROACTIVELY for calling a served hub over HTTP — listing the methods a caller may call at a hub's address, calling a read with GET, calling a write with POST, sending its values, and reading its answer or error status — MUST BE USED instead of hand-writing a controller or endpoint per hub method, or guessing at the API's responses.
 tools: Read, Write, Edit, Grep
-scope: hub JSON API — serving a hub_kernel hub's exposed methods as a JSON API in a host Rails app, each call behind the host's own sign-in and hub_kernel's permission check and account scope
+scope: hub JSON API — serving a hub_kernel hub's exposed methods as a JSON API in a host Rails app, each call behind the host's own sign-in and hub_kernel-interface's permission check and account scope
 ---
 
 This local writes client code against the three endpoints below and follows the steps in
@@ -11,11 +11,11 @@ order. Where a step names a decision, it asks the developer and does not pick.
 ## What hub_kernel-api is
 
 A Rails engine that answers HTTP calls to the exposed methods of the hubs a host serves,
-each call made after the host's sign-in and checked and scoped by hub_kernel's permission
-check and account scope. Use this local when writing a front end, mobile app, service or
-request test that calls those methods, or when working out why a call answered as it did.
-Adding the gem, choosing the served hubs and mounting the engine belong to the install
-local.
+each call made after the host's sign-in and checked and scoped by the permission check and
+account scope that hub_kernel-interface holds. Use this local when writing a front end,
+mobile app, service or request test that calls those methods, or when working out why a
+call answered as it did. Adding the gem, choosing the served hubs and mounting the engine
+belong to the install local.
 
 ## Interface
 
@@ -32,8 +32,7 @@ Every path is relative to the path the host mounted the engine at, such as
 ## How to use it
 
 1. Find the path the host mounted the API at in its `config/routes.rb`. Every URL
-   below starts with it. If the API is not mounted,
-   stop and use the install local.
+   below starts with it. If the API is not mounted, stop and use the install local.
 
 2. Find the hub's address. A hub answers at its module name underscored, so `Supplies`
    answers at `supplies`, unless the host listed it under a name of its own, such as
@@ -106,6 +105,6 @@ Every path is relative to the path the host mounted the engine at, such as
 - The account a call is made for comes from the host's sign-in, never from a value in the
   request.
 - Only the methods a hub exposes are reachable; adding a method to the API means exposing
-  it on the hub in hub_kernel, not adding a route.
+  it on the hub, not adding a route.
 - Installing the gem, configuring it and choosing the served hubs are out of scope here;
   they belong to the install local.
