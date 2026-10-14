@@ -23,4 +23,15 @@ class SharedCallerTest < ActionDispatch::IntegrationTest
 
     assert_equal [ [ "sam", "acme" ] ], asked
   end
+
+  test "the JSON API's own person and account methods are used instead of the shared ones when set" do
+    HubKernel::Api.person_method, HubKernel::Api.account_method = :current_person, :current_account
+    HubKernel::Interface.person_method, HubKernel::Interface.account_method = :current_account, :current_person
+    asked = []
+    HubKernel::Authz.check = ->(person, _action, account) { asked << [ person, account ] && true }
+
+    get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_equal [ [ "sam", "acme" ] ], asked
+  end
 end
