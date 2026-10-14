@@ -22,6 +22,11 @@ Rails.application.config.to_prepare do
 end
 ```
 
+When `HubKernel::Api.person_method` or `HubKernel::Api.account_method` is not set, the JSON
+API uses `HubKernel::Interface.person_method` or `HubKernel::Interface.account_method`, so a
+host that also serves hub_kernel-mcp can name the caller once in hub_kernel-interface. The
+JSON API's own setting is used when it is set.
+
 `HubKernel::Api.check!` raises `HubKernel::Api::UnservableHubError` when a served entry
 exposes no methods, when two served hubs answer at the same address, or when a served
 hub's exposed list has a problem, naming each. Inside `to_prepare` it runs again after
