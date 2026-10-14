@@ -7,9 +7,9 @@ module HubKernel
 
       def hub = @hub ||= HubKernel::Api.find(params[:hub]) || raise(ActionController::RoutingError, "Not found")
 
-      def caller_person = send(HubKernel::Api.person_method)
+      def caller_person = send(HubKernel::Api.person_method || HubKernel::Interface.person_method)
 
-      def caller_account = send(HubKernel::Api.account_method)
+      def caller_account = send(HubKernel::Api.account_method || HubKernel::Interface.account_method)
 
       def not_found = render(json: { error: "Not found" }, status: :not_found)
     end
