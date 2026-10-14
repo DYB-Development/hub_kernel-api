@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-14
+
 ### Changed
 - A call is made for the person and account that `HubKernel::Interface.person_method` and `HubKernel::Interface.account_method` give when `HubKernel::Api.person_method` or `HubKernel::Api.account_method` is not set, and the JSON API's own setting is used when it is.
 - hub_kernel-api requires hub_kernel-interface 0.9.
