@@ -6,4 +6,10 @@ class VersionedCallsTest < ActionDispatch::IntegrationTest
 
     assert_equal "2.1.0", response.headers["Api-Version"]
   end
+
+  test "a call sending no Accept-Version is answered at the oldest major served" do
+    get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_equal "1.0.0", response.headers["Api-Version"]
+  end
 end

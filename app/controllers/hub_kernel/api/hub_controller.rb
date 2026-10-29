@@ -9,10 +9,10 @@ module HubKernel
 
       def hub = @hub ||= HubKernel::Api.find(params[:hub]) || raise(ActionController::RoutingError, "Not found")
 
-      def major = @major ||= HubKernel::Api.versions.find { |listed| listed.major.to_s == request.headers["Accept-Version"] }
+      def major = @major ||= HubKernel::Api.versions.find { |listed| listed.major.to_s == request.headers["Accept-Version"] } || HubKernel::Api.versions.min_by(&:major)
 
       def report_major
-        response.headers["Api-Version"] = major&.version
+        response.headers["Api-Version"] = major.version
       end
 
       def caller_person = send(HubKernel::Api.person_method || HubKernel::Interface.person_method)
