@@ -157,4 +157,10 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
 
     assert_raises(HubKernel::Api::UnservableHubError, match: "The listed version 1 is not in major.minor.patch form") { HubKernel::Api.check! }
   end
+
+  test "a major written as a number with a date that is not a Date is named as not in major.minor.patch form" do
+    HubKernel::Api.versions = [ HubKernel::Api::MajorVersion.new(version: 1, deprecated_on: "2026-09-30"), HubKernel::Api::MajorVersion.new(version: "2.1.0") ]
+
+    assert_raises(HubKernel::Api::UnservableHubError, match: "The listed version 1 is not in major.minor.patch form") { HubKernel::Api.check! }
+  end
 end
