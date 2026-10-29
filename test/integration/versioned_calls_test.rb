@@ -12,4 +12,10 @@ class VersionedCallsTest < ActionDispatch::IntegrationTest
 
     assert_equal "1.0.0", response.headers["Api-Version"]
   end
+
+  test "a call naming a major the host does not list is answered with status 406" do
+    get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "7" }, as: :json
+
+    assert_response :not_acceptable
+  end
 end

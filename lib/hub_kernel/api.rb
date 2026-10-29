@@ -6,6 +6,7 @@ require "hub_kernel/api/engine"
 module HubKernel
   module Api
     UnservableHubError = HubKernel::Interface::UnservableHubError
+    class UnservedMajorError < StandardError; end
 
     mattr_accessor :base_controller, default: "ActionController::API"
     mattr_accessor :person_method

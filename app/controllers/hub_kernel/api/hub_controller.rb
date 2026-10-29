@@ -2,6 +2,7 @@ module HubKernel
   module Api
     class HubController < HubKernel::Api.base_controller.constantize
       rescue_from ActionController::RoutingError, HubKernel::NotAllowed, with: :not_found
+      rescue_from HubKernel::Api::UnservedMajorError, with: :unserved_major
 
       before_action :report_major
 
@@ -9,7 +10,9 @@ module HubKernel
 
       def hub = @hub ||= HubKernel::Api.find(params[:hub]) || raise(ActionController::RoutingError, "Not found")
 
-      def major = @major ||= HubKernel::Api.versions.find { |listed| listed.major.to_s == request.headers["Accept-Version"] } || HubKernel::Api.versions.min_by(&:major)
+      def major = @major ||= request.headers["Accept-Version"] ? named_major : HubKernel::Api.versions.min_by(&:major)
+
+      def named_major = HubKernel::Api.versions.find { |listed| listed.major.to_s == request.headers["Accept-Version"] } || raise(HubKernel::Api::UnservedMajorError)
 
       def report_major
         response.headers["Api-Version"] = major.version
@@ -20,6 +23,8 @@ module HubKernel
       def caller_account = send(HubKernel::Api.account_method || HubKernel::Interface.account_method)
 
       def not_found = render(json: { error: "Not found" }, status: :not_found)
+
+      def unserved_major(refusal) = render(json: { error: refusal.message }, status: :not_acceptable)
     end
   end
 end
