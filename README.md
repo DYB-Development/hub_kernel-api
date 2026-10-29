@@ -115,8 +115,8 @@ renders its message:
 { "error": "Major 7 is not served, the majors served are 1 and 2" }
 ```
 
-A host that lists no majors answers every call with the method's own answer and sends no
-version headers.
+A host that lists no majors ignores any `Accept-Version` header, answers every call with
+the method's own answer, and sends no version headers.
 
 ## Installation
 
