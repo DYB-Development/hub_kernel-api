@@ -64,4 +64,17 @@ class HubKernel::Api::DescriptionFilesTest < ActiveSupport::TestCase
       assert_equal "Major 2 removes or renames shop.price_of.takes.size, which its committed file holds\nMajor 2 removes or renames shop.discount_of, which its committed file holds", error.message
     end
   end
+
+  test "writing the description files rewrites a major's file when its current description only adds to it under a raised minor" do
+    Dir.mktmpdir do |directory|
+      description = JSON.parse(HubKernel::Api::Description.at(HubKernel::Api.versions.second).to_json)
+      description["version"] = "2.0.0"
+      description["hubs"]["shop"].first["takes"] = []
+      File.write(File.join(directory, "v2.json"), JSON.pretty_generate(description))
+
+      HubKernel::Api::DescriptionFiles.write(directory)
+
+      assert_equal JSON.pretty_generate(HubKernel::Api::Description.at(HubKernel::Api.versions.second)), File.read(File.join(directory, "v2.json"))
+    end
+  end
 end
