@@ -43,4 +43,10 @@ class RetiredMajorsTest < ActionDispatch::IntegrationTest
 
     assert_equal [ 410, { "error" => "Major 1 is no longer served, the newest major is 3" }, nil ], [ response.status, response.parsed_body, response.headers["Api-Version"] ]
   end
+
+  test "a call naming a retired major names Accept-Version in Vary" do
+    get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "1" }, as: :json
+
+    assert_equal "Accept-Version", response.headers["Vary"]
+  end
 end
