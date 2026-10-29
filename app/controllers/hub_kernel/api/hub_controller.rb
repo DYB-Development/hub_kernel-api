@@ -33,7 +33,7 @@ module HubKernel
       def report_major
         response.headers["Vary"] = "Accept-Version"
         response.headers["Api-Version"] = major.version
-        response.headers["Api-Newest-Version"] = newest.version
+        response.headers["Api-Newest-Version"] = newest.version unless major == newest
       end
 
       def listing_of(hub) = hub.exposures_for(person: caller_person, account: caller_account).map { |exposure| listed(exposure) }

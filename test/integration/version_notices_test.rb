@@ -13,4 +13,10 @@ class VersionNoticesTest < ActionDispatch::IntegrationTest
 
     assert_equal "3.0.2", response.headers["Api-Newest-Version"]
   end
+
+  test "an answer at the newest major carries none of the notice headers" do
+    get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "3" }, as: :json
+
+    assert_equal [ nil, nil, nil ], response.headers.values_at("Api-Newest-Version", "Deprecation", "Sunset")
+  end
 end
