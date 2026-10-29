@@ -1,13 +1,14 @@
 ---
 name: hub_kernel-api-develop
-description: Use PROACTIVELY for calling a served hub over HTTP — listing every served hub's methods and the version at the API's root address, listing the methods a caller may call at a hub's address, reading the JSON Schema of each method's answer from a listing, calling a read with GET, calling a write with POST, sending its values, naming the major version a client was built for with Accept-Version, reading the Api-Version a call was answered at, noticing from Api-Newest-Version that a newer major is served, noticing from Deprecation and Sunset that the pinned major is deprecated, when it was deprecated and when it stops being served, reading its answer or error status, handling a call refused because it names a retired major, writing each major's description file with the describe task, and checking a recorded answer against a description file without a running host, and testing in the host that a method's answer still matches its declared answer shape at a major — MUST BE USED instead of hand-writing a controller or endpoint per hub method, versioning the URL by hand, hand-writing a schema or type for a method's answer, hand-writing an API description file, hand-rolling a JSON Schema check of an answer in a host test, or guessing at the API's responses.
+description: Use PROACTIVELY for calling a served hub over HTTP — listing every served hub's methods and the version at the API's root address, listing the methods a caller may call at a hub's address, reading the JSON Schema of each method's answer from a listing, calling a read with GET, calling a write with POST, sending its values, naming the major version a client was built for with Accept-Version, reading the Api-Version a call was answered at, noticing from Api-Newest-Version that a newer major is served, noticing from Deprecation and Sunset that the pinned major is deprecated, when it was deprecated and when it stops being served, reading its answer or error status, handling a call refused because it names a retired major, writing each major's description file with the describe task, checking in CI that no major removes, renames or silently adds to what its committed description file holds, handling a BreakingChangeError from the check or describe task, checking a recorded answer against a description file without a running host, and testing in the host that a method's answer still matches its declared answer shape at a major — MUST BE USED instead of hand-writing a controller or endpoint per hub method, versioning the URL by hand, hand-writing a schema or type for a method's answer, hand-writing an API description file, hand-diffing description files to spot a breaking change, hand-rolling a JSON Schema check of an answer in a host test, or guessing at the API's responses.
 tools: Read, Write, Edit, Grep
 scope: hub JSON API — serving a hub_kernel hub's exposed methods as a JSON API in a host Rails app, each call behind the host's own sign-in and hub_kernel-interface's permission check and account scope
 ---
 
 This local writes client code against the four endpoints, the six headers, the answer
-shapes, the describe task and the description files below, writes host tests with the
-answer shape assertion, and follows the steps in order.
+shapes, the describe task and the description files below, runs the breaking change check
+on those files, writes host tests with the answer shape assertion, and follows the steps in
+order.
 Where a step names a decision, it asks the developer and does not pick.
 
 ## What hub_kernel-api is
@@ -22,10 +23,13 @@ must give the date it was deprecated and the date it stops being served, and eve
 at it then carries headers giving those dates. Every
 answer at a major older than the newest carries a header naming the newest. A listing can give the JSON Schema of each method's answer at that major,
 and a rake task writes the same description for each major into a file a client can use
-without reaching a running host. A call never checks its answer against its declared
+without reaching a running host. A second rake task fails when a major's current
+description removes or renames something its committed file holds, or adds something
+without the major's minor being raised. A call never checks its answer against its declared
 shape, so the gem gives the host a test assertion that does. Use this local when writing a
 front end, mobile app, service or request test that calls those methods, when generating
 client types from the answer shapes, when writing or using the description files, when
+checking a hub change for a breaking change or handling a failed check, when
 testing in the host that a method's answer matches its shape, or when working out why a
 call answered as it did. Adding the gem, choosing the served hubs, listing the majors, deprecating
 or retiring a major, declaring
@@ -59,7 +63,13 @@ answer shapes and mounting the engine belong to the install local.
 - `answer_shape` listing field — the JSON Schema of a method's answer at the major the
   listing describes, present only when one is declared for that major.
 - `bin/rails hub_kernel_api:describe` — run in the host, writes one description file for
-  each major the host lists that is not retired into the host's `api_descriptions` folder.
+  each major the host lists that is not retired into the host's `api_descriptions` folder,
+  and writes none while any major removes or renames something its committed file holds.
+- `bin/rails hub_kernel_api:check_descriptions` — run in the host, usually in CI, fails
+  when a major that is not retired and has a committed file removes or renames something
+  that file holds, or adds something without its minor being raised above the file's.
+- `HubKernel::Api::BreakingChangeError` — the error both tasks raise, naming every
+  problem at once, one to a line.
 - `api_descriptions/v<major>.json` — one major's description, written for no retired major, `{ "version", "hubs":
   { "<hub>": [...] } }`, holding every served method at that major whatever any caller may
   call.
@@ -204,12 +214,54 @@ Every path in an endpoint is relative to the path the host mounted the engine at
 
    Whether the host commits the files is the developer's decision: ask.
 
-10. To check answers in a client repo without reaching a running host, copy in the file
+   The task refuses to write any file while a major removes or renames something its
+   committed file holds, and raises `HubKernel::Api::BreakingChangeError` naming each one,
+   as step 10 describes. It does not refuse an addition whose minor was not raised, so
+   raise the minor before running it, as step 10 says.
+
+10. To catch a breaking change before it ships, run the check in the host, and in the
+    host's CI, against the committed description files:
+
+    ```sh
+    bin/rails hub_kernel_api:check_descriptions
+    ```
+
+    It compares each major that is listed, is not retired and has a file in
+    `api_descriptions` with that major's current description, and passes or raises
+    `HubKernel::Api::BreakingChangeError` naming every problem at once, one to a line:
+
+    ```
+    Major 2 removes or renames supplies.shelf_of.answer_shape.required.shelf, which its committed file holds
+    Major 2 adds supplies.shelf_of.takes.size without raising its minor above 2.1.0
+    ```
+
+    Each problem names the major and a dotted path into its file: the hub's address, the
+    method's name, then `takes`, `verb` or `answer_shape` and the keys and values below
+    it. A changed value shows as the old value removed, so a method moved from GET to
+    POST shows as `verb.GET` removed, and a rename shows as the old name removed.
+
+    - A removal or rename breaks clients pinned to that major. Whether to keep the old
+      hub, method, value, verb or shape key at that major, or to make the change only in a
+      new major, is the developer's decision: ask. Never delete or edit the committed file
+      to make the check pass.
+    - An addition without a raised minor is fixed by raising the minor of that major's full
+      version in the host's version list above the minor the problem names, such as
+      `"2.1.0"` to `"2.2.0"`, then running `bin/rails hub_kernel_api:describe` to rewrite
+      the file. Ask the developer before changing the version.
+    - A change that keeps every key and value but changes what a value means passes, so
+      the check does not replace reviewing such a change.
+    - A retired major, a major the host no longer lists, and a major with no committed
+      file are not compared.
+
+    Run the check before running the describe task, since the describe task overwrites
+    the file the check compares against.
+
+11. To check answers in a client repo without reaching a running host, copy in the file
     for the major the client pins, and check a recorded `answer` against the method's
     `answer_shape` from that file with a JSON Schema library. Which library to use is the
     developer's decision: ask. Copy the file again whenever the host rewrites it.
 
-11. Call a read with GET, sending its values as query parameters:
+12. Call a read with GET, sending its values as query parameters:
 
     ```
     GET /api/v1/hubs/supplies/price_of?item=42
@@ -218,7 +270,7 @@ Every path in an endpoint is relative to the path the host mounted the engine at
 
     Query values arrive as strings.
 
-12. Call a write with POST, sending its values as a JSON body with
+13. Call a write with POST, sending its values as a JSON body with
     `Content-Type: application/json`, keyed directly by value name with no wrapping key:
 
     ```
@@ -232,7 +284,7 @@ Every path in an endpoint is relative to the path the host mounted the engine at
     Query parameters on a POST are sent to the method as well. Do not send a value whose
     name is not in `takes`.
 
-13. Read the response by status:
+14. Read the response by status:
 
     | Case | Status | Body |
     | --- | --- | --- |
@@ -250,7 +302,7 @@ Every path in an endpoint is relative to the path the host mounted the engine at
     host has retired. Fix the pinned major for either rather than retrying, and ask the
     developer which major to move the client to.
 
-14. Read the response headers from a host that lists majors:
+15. Read the response headers from a host that lists majors:
 
     - `Api-Version` holds the full version the answer was given at, such as `2.0.1`, on
       every answer except a 406 or a 410. Use it to log or show which version served the
@@ -277,7 +329,7 @@ Every path in an endpoint is relative to the path the host mounted the engine at
     Never move the pinned major automatically from these headers, since the answer shapes
     differ between majors.
 
-15. For a request test in the host, sign in as a person with and without the permission,
+16. For a request test in the host, sign in as a person with and without the permission,
     and assert the 200 answer for one and the `Not found` 404 for the other. When the
     host lists majors, also assert the `Api-Version` header for a named major, the
     answer shape at an older major for a method that declares earlier answers, the
@@ -286,7 +338,7 @@ Every path in an endpoint is relative to the path the host mounted the engine at
     `Deprecation` and `Sunset` header values at a deprecated major, the 406 for a major the
     host does not list, and the 410 for a retired major.
 
-16. To test in the host that a method's answer still matches its declared shape, add the
+17. To test in the host that a method's answer still matches its declared shape, add the
     json_schemer gem to the host's test group, since the assertion needs it and the gem
     does not depend on it:
 
@@ -346,6 +398,9 @@ Every path in an endpoint is relative to the path the host mounted the engine at
   `assert_answer_shape`, never with a hand-written JSON Schema check of the declared shape.
 - A description file is written by the describe task only; never edit one by hand, and
   never use one to decide what a caller may call.
+- A breaking change is found by `bin/rails hub_kernel_api:check_descriptions` against the
+  committed files; never pass it by deleting or editing a committed file, and never run the
+  describe task to clear an addition before the major's minor is raised.
 - The account a call is made for comes from the host's sign-in, never from a value in the
   request.
 - Only the methods a hub exposes are reachable; adding a method to the API means exposing
