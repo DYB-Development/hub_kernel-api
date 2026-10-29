@@ -3,7 +3,7 @@ require "test_helper"
 class VersionNoticesTest < ActionDispatch::IntegrationTest
   setup do
     @listed = HubKernel::Api.versions
-    HubKernel::Api.versions = [ HubKernel::Api::MajorVersion.new(version: "1.0.0"), HubKernel::Api::MajorVersion.new(version: "2.1.0", deprecated: true, sunset: Date.new(2027, 3, 31)), HubKernel::Api::MajorVersion.new(version: "3.0.2") ]
+    HubKernel::Api.versions = [ HubKernel::Api::MajorVersion.new(version: "1.0.0"), HubKernel::Api::MajorVersion.new(version: "2.1.0", deprecated: true, deprecated_on: Date.new(2026, 9, 30), sunset: Date.new(2027, 3, 31)), HubKernel::Api::MajorVersion.new(version: "3.0.2") ]
   end
 
   teardown { HubKernel::Api.versions = @listed }
@@ -20,10 +20,10 @@ class VersionNoticesTest < ActionDispatch::IntegrationTest
     assert_equal [ nil, nil, nil ], response.headers.values_at("Api-Newest-Version", "Deprecation", "Sunset")
   end
 
-  test "an answer at a deprecated major carries a Deprecation header" do
+  test "an answer at a deprecated major gives the date it was deprecated in a Deprecation header" do
     get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "2" }, as: :json
 
-    assert_equal "true", response.headers["Deprecation"]
+    assert_equal "@1790726400", response.headers["Deprecation"]
   end
 
   test "an answer at an older major that is not deprecated carries no Deprecation header" do
@@ -49,6 +49,6 @@ class VersionNoticesTest < ActionDispatch::IntegrationTest
   test "a call at a deprecated major is answered end to end with its answer, its version and every notice header" do
     get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "2" }, as: :json
 
-    assert_equal [ 200, { "answer" => "soap costs 3" }, "2.1.0", "3.0.2", "true", "Wed, 31 Mar 2027 00:00:00 GMT" ], [ response.status, response.parsed_body, *response.headers.values_at("Api-Version", "Api-Newest-Version", "Deprecation", "Sunset") ]
+    assert_equal [ 200, { "answer" => "soap costs 3" }, "2.1.0", "3.0.2", "@1790726400", "Wed, 31 Mar 2027 00:00:00 GMT" ], [ response.status, response.parsed_body, *response.headers.values_at("Api-Version", "Api-Newest-Version", "Deprecation", "Sunset") ]
   end
 end

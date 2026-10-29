@@ -39,7 +39,7 @@ module HubKernel
       end
 
       def report_deprecation
-        response.headers["Deprecation"] = "true"
+        response.headers["Deprecation"] = "@#{Time.utc(major.deprecated_on.year, major.deprecated_on.month, major.deprecated_on.day).to_i}" if major.deprecated_on
         response.headers["Sunset"] = major.sunset.httpdate if major.sunset
       end
 
