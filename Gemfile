@@ -16,3 +16,5 @@ gem "rubocop-rails-omakase", require: false
 # gem "debug", ">= 1.0.0"
 
 gem "the_local", "~> 0.4.1"
+
+gem "json_schemer", "~> 2.5", group: :test, require: false

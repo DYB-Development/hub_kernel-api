@@ -20,10 +20,8 @@ module HubKernel
       def at_major(answer)
         return answer if HubKernel::Api.versions.empty?
 
-        earlier_answers_down_to_major.reduce(answer) { |translated, earlier| earlier.translate(translated) }
+        HubKernel::Api::EarlierAnswers.translate(answer, hub.exposed(params[:name]), major)
       end
-
-      def earlier_answers_down_to_major = hub.exposed(params[:name]).earlier_answers.select { |earlier| earlier.major >= major.major }.sort_by(&:major).reverse
 
       def values = request.query_parameters.merge(request.request_parameters).deep_symbolize_keys
 

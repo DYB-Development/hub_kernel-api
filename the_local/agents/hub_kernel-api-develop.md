@@ -1,12 +1,13 @@
 ---
 name: hub_kernel-api-develop
-description: Use PROACTIVELY for calling a served hub over HTTP — listing every served hub's methods and the version at the API's root address, listing the methods a caller may call at a hub's address, reading the JSON Schema of each method's answer from a listing, calling a read with GET, calling a write with POST, sending its values, naming the major version a client was built for with Accept-Version, reading the Api-Version a call was answered at, noticing from Api-Newest-Version that a newer major is served, noticing from Deprecation and Sunset that the pinned major is deprecated, when it was deprecated and when it stops being served, reading its answer or error status, handling a call refused because it names a retired major, writing each major's description file with the describe task, and checking a recorded answer against a description file without a running host — MUST BE USED instead of hand-writing a controller or endpoint per hub method, versioning the URL by hand, hand-writing a schema or type for a method's answer, hand-writing an API description file, or guessing at the API's responses.
+description: Use PROACTIVELY for calling a served hub over HTTP — listing every served hub's methods and the version at the API's root address, listing the methods a caller may call at a hub's address, reading the JSON Schema of each method's answer from a listing, calling a read with GET, calling a write with POST, sending its values, naming the major version a client was built for with Accept-Version, reading the Api-Version a call was answered at, noticing from Api-Newest-Version that a newer major is served, noticing from Deprecation and Sunset that the pinned major is deprecated, when it was deprecated and when it stops being served, reading its answer or error status, handling a call refused because it names a retired major, writing each major's description file with the describe task, and checking a recorded answer against a description file without a running host, and testing in the host that a method's answer still matches its declared answer shape at a major — MUST BE USED instead of hand-writing a controller or endpoint per hub method, versioning the URL by hand, hand-writing a schema or type for a method's answer, hand-writing an API description file, hand-rolling a JSON Schema check of an answer in a host test, or guessing at the API's responses.
 tools: Read, Write, Edit, Grep
 scope: hub JSON API — serving a hub_kernel hub's exposed methods as a JSON API in a host Rails app, each call behind the host's own sign-in and hub_kernel-interface's permission check and account scope
 ---
 
 This local writes client code against the four endpoints, the six headers, the answer
-shapes, the describe task and the description files below, and follows the steps in order.
+shapes, the describe task and the description files below, writes host tests with the
+answer shape assertion, and follows the steps in order.
 Where a step names a decision, it asks the developer and does not pick.
 
 ## What hub_kernel-api is
@@ -21,10 +22,12 @@ must give the date it was deprecated and the date it stops being served, and eve
 at it then carries headers giving those dates. Every
 answer at a major older than the newest carries a header naming the newest. A listing can give the JSON Schema of each method's answer at that major,
 and a rake task writes the same description for each major into a file a client can use
-without reaching a running host. Use this local when writing a front end, mobile app,
-service or request test that calls those methods, when generating client types from the
-answer shapes, when writing or using the description files, or when working out why a call
-answered as it did. Adding the gem, choosing the served hubs, listing the majors, deprecating
+without reaching a running host. A call never checks its answer against its declared
+shape, so the gem gives the host a test assertion that does. Use this local when writing a
+front end, mobile app, service or request test that calls those methods, when generating
+client types from the answer shapes, when writing or using the description files, when
+testing in the host that a method's answer matches its shape, or when working out why a
+call answered as it did. Adding the gem, choosing the served hubs, listing the majors, deprecating
 or retiring a major, declaring
 answer shapes and mounting the engine belong to the install local.
 
@@ -60,6 +63,11 @@ answer shapes and mounting the engine belong to the install local.
 - `api_descriptions/v<major>.json` — one major's description, written for no retired major, `{ "version", "hubs":
   { "<hub>": [...] } }`, holding every served method at that major whatever any caller may
   call.
+- `HubKernel::Api::TestHelper` — a module a host's Minitest test case includes, after
+  `require "hub_kernel/api/test_helper"`, to get `assert_answer_shape`.
+- `assert_answer_shape(hub, name, answer, major:)` — translates a method's own answer down
+  to the named major as a call does, and fails the test when it does not match the method's
+  answer shape at that major.
 
 Every path in an endpoint is relative to the path the host mounted the engine at, such as
 `/api/v1/hubs`. The `api_descriptions` folder is relative to the host's root.
@@ -278,6 +286,47 @@ Every path in an endpoint is relative to the path the host mounted the engine at
     `Deprecation` and `Sunset` header values at a deprecated major, the 406 for a major the
     host does not list, and the 410 for a retired major.
 
+16. To test in the host that a method's answer still matches its declared shape, add the
+    json_schemer gem to the host's test group, since the assertion needs it and the gem
+    does not depend on it:
+
+    ```ruby
+    group :test do
+      gem "json_schemer"
+    end
+    ```
+
+    Then include the helper in a Minitest test case and assert one method's answer at one
+    major:
+
+    ```ruby
+    require "hub_kernel/api/test_helper"
+
+    class SuppliesShapeTest < ActiveSupport::TestCase
+      include HubKernel::Api::TestHelper
+
+      test "shelf_of answers in its shape at major 1" do
+        assert_answer_shape(Supplies, :shelf_of, Supplies.shelf_of(item: "flour"), major: 1)
+      end
+    end
+    ```
+
+    - `hub` is the hub module, and `name` is the exposed method's name as a symbol.
+    - `answer` is the method's own answer, the value the hub returns, never an answer
+      already converted to an older major. The assertion converts it down to `major:`
+      through the earlier answers the hub declares, as a call does.
+    - `major:` is a bare major number the host lists, such as `1`, not a full version.
+    - The shape checked is the one a hub listing gives at that major, by the rule in step 8.
+    - A failure names the method and the major, then each place the answer differs from
+      the shape, one to a line.
+    - It also fails, naming the major and the method, when the host lists no such major,
+      which includes every major on a host that lists none, or when the method declares no
+      shape at that major.
+    - Without json_schemer installed it raises a `LoadError` naming the gem to add.
+
+    Which methods and which majors to assert, and which inputs to call each method with,
+    are the developer's decision: ask.
+
 ## Conventions
 
 - Never send GET to a write or POST to a read; the wrong verb is answered as not found,
@@ -293,6 +342,8 @@ Every path in an endpoint is relative to the path the host mounted the engine at
 - An `answer_shape` describes one major only; never apply a shape fetched at one major to
   answers at another, and never hand-write a shape the listing or a description file
   already gives.
+- A call never checks its answer against its shape; check it in a host test with
+  `assert_answer_shape`, never with a hand-written JSON Schema check of the declared shape.
 - A description file is written by the describe task only; never edit one by hand, and
   never use one to decide what a caller may call.
 - The account a call is made for comes from the host's sign-in, never from a value in the

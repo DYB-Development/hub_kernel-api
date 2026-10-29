@@ -240,6 +240,39 @@ major's file in and checks a recorded answer against a method's `answer_shape` w
 Schema library, without reaching a running host. The task writes no file for a retired
 major, and a host that lists no majors writes no files.
 
+## Testing an answer against its shape
+
+A call never checks its answer against a declared shape, so a shape can stop describing what
+its method answers. A host's test catches that with `assert_answer_shape`, which needs the
+json_schemer gem in the host's test group:
+
+```ruby
+group :test do
+  gem "json_schemer"
+end
+```
+
+```ruby
+require "hub_kernel/api/test_helper"
+
+class SuppliesShapeTest < ActiveSupport::TestCase
+  include HubKernel::Api::TestHelper
+
+  test "shelf_of answers in its shape at major 1" do
+    assert_answer_shape(Supplies, :shelf_of, Supplies.shelf_of(item: "flour"), major: 1)
+  end
+end
+```
+
+The assertion takes the hub, the method's name, the method's own answer and a major the
+host lists. It translates the answer down to that major through the earlier answers the hub
+declares, as a call does, and checks it against the method's shape at that major, as a hub
+listing gives it. A failing assertion names the method and the major, then each place the
+answer differs from the shape, one to a line. It also fails naming the major and the method
+when the host lists no such major, or when the method declares no shape at it. Used without
+json_schemer installed, it raises a `LoadError` naming the gem to add. hub_kernel-api loads
+json_schemer only when the assertion runs, so a host without it still loads the gem.
+
 ## Installation
 
 ```ruby

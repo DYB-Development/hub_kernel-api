@@ -39,9 +39,9 @@ in when a Rails app needs its hubs callable over HTTP.
   any hub cannot be served or the majors hold a mistake.
 - `HubKernel::Api::UnservableHubError` — the error `check!` raises, its message naming
   every problem on its own line.
-- `HubKernel::Api::UnservedMajorError` — the error the API raises when a call names a
-  major the host does not list; the API answers that call with status 406 and the
-  error's message, and the host does not rescue it.
+- `HubKernel::Api::UnservedMajorError` — the error the API raises when a call or a listing
+  names a major the host does not list, whether or not the hub it names is served; the API
+  answers that call with status 406 and the error's message, and the host does not rescue it.
 - `HubKernel::Api::RetiredMajorError` — the error the API raises when a call or a listing
   names a retired major, whether or not the hub it names is served; the API answers that
   call with status 410 and the error's message, and the host does not rescue it.
