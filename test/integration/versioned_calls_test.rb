@@ -88,4 +88,10 @@ class VersionedCallsTest < ActionDispatch::IntegrationTest
 
     assert_equal "3.0.2", response.headers["Api-Version"]
   end
+
+  test "a call at an older major is answered end to end with its translated answer and its version headers" do
+    get "/hubs/pantry/shelf_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "2" }, as: :json
+
+    assert_equal [ 200, { "answer" => { "item" => "soap", "row" => 4 } }, "2.1.0", "Accept-Version" ], [ response.status, response.parsed_body, response.headers["Api-Version"], response.headers["Vary"] ]
+  end
 end
