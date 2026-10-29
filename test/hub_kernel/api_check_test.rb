@@ -88,4 +88,10 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
 
     assert_raises(HubKernel::Api::UnservableHubError, match: "Major 1 is listed more than once") { HubKernel::Api.check! }
   end
+
+  test "a deprecated major with no date it stops being served stops the app and is named" do
+    HubKernel::Api.versions = [ HubKernel::Api::MajorVersion.new(version: "1.0.0", deprecated: true, deprecated_on: Date.new(2026, 9, 30)), HubKernel::Api::MajorVersion.new(version: "2.1.0") ]
+
+    assert_raises(HubKernel::Api::UnservableHubError, match: "Major 1 is deprecated with no sunset: date it stops being served") { HubKernel::Api.check! }
+  end
 end
