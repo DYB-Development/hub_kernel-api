@@ -82,4 +82,10 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
 
     assert_raises(HubKernel::Api::UnservableHubError, match: "The listed version 2.1 is not in major.minor.patch form") { HubKernel::Api.check! }
   end
+
+  test "a major the host lists twice stops the app and is named" do
+    HubKernel::Api.versions = [ HubKernel::Api::MajorVersion.new(version: "1.0.0"), HubKernel::Api::MajorVersion.new(version: "1.2.0"), HubKernel::Api::MajorVersion.new(version: "2.1.0") ]
+
+    assert_raises(HubKernel::Api::UnservableHubError, match: "Major 1 is listed more than once") { HubKernel::Api.check! }
+  end
 end
