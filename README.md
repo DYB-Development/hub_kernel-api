@@ -164,7 +164,8 @@ each of these:
 - An earlier answer declared for a major the host does not list.
 - An earlier answer declared for the newest major, which has no newer answer to translate
   from.
-- A listed version not in major.minor.patch form.
+- A listed version not a string in major.minor.patch form, such as `"2.1"` or the number
+  `2`.
 - A major listed more than once.
 - A deprecated major with no `deprecated_on:` date or no `sunset:` date.
 - A `deprecated_on:` or `sunset:` date given as something other than a `Date`.

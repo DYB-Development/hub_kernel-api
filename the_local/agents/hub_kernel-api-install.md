@@ -100,7 +100,7 @@ in when a Rails app needs its hubs callable over HTTP.
    - `deprecated_on:` and `sunset:` on a major not marked `deprecated: true` are never sent
      to a caller.
    - `HubKernel::Api.check!` refuses to boot the host when the list holds any of these:
-     a version not in major.minor.patch form, a major listed twice, a deprecated major
+     a version not a string in major.minor.patch form, a major listed twice, a deprecated major
      missing `deprecated_on:` or `sunset:`, a `deprecated_on:` or `sunset:` that is not a
      `Date`, or every listed major retired.
    - It also refuses when a served hub declares an earlier answer for a major the host
@@ -155,8 +155,8 @@ in when a Rails app needs its hubs callable over HTTP.
      remove it, or expose methods on it.
    - `<Hub> and <Hub> both answer at <address>` — give one of them its own address with
      a one-pair Hash.
-   - `The listed version <version> is not in major.minor.patch form` — correct that
-     entry's `version:`.
+   - `The listed version <version> is not in major.minor.patch form` — write that
+     entry's `version:` as a string such as `"2.1.0"`.
    - `Major <n> is listed more than once` — keep one entry for that major.
    - `Major <n> is deprecated with no deprecated_on: date it was deprecated` or
      `... with no sunset: date it stops being served` — ask the developer for the missing

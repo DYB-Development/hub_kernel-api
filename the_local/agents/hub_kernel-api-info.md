@@ -117,7 +117,7 @@ This local declares no commands. The surface is split between the other two loca
   no majors.
 - **Startup check** — run when the host boots, it refuses to let the app start while a
   served hub cannot be served or the listed majors hold a mistake, and names every
-  problem it found. A mistake in the majors is a version not in major.minor.patch form,
+  problem it found. A mistake in the majors is a version not a string in major.minor.patch form,
   a major listed twice, a deprecated major missing either date, a date given as
   something other than a date, every major retired, or a hub declaring an earlier answer
   for a major the host does not list or for the newest major.
