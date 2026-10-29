@@ -20,6 +20,12 @@ class AnswerShapesTest < ActionDispatch::IntegrationTest
     }
 
     def self.aisle_of(item:) = 4
+
+    exposes :bin_of, takes: %i[item], writes: false, answer_shape: { "type" => "integer" }, earlier_answers: {
+      1 => ->(answer) { answer.to_s }
+    }
+
+    def self.bin_of(item:) = 9
   end
 
   setup do
@@ -51,5 +57,11 @@ class AnswerShapesTest < ActionDispatch::IntegrationTest
     get "/hubs/pantry", headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "1" }, as: :json
 
     assert_equal({ "type" => "string" }, response.parsed_body.find { |listed| listed["name"] == "aisle_of" }["answer_shape"])
+  end
+
+  test "a hub listing at an older major whose earlier answer declares no shape shows that method with no shape" do
+    get "/hubs/pantry", headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "1" }, as: :json
+
+    assert_equal({ "name" => "bin_of", "takes" => [ "item" ], "verb" => "GET" }, response.parsed_body.find { |listed| listed["name"] == "bin_of" })
   end
 end
