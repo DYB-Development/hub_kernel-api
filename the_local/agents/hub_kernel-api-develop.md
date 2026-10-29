@@ -16,9 +16,9 @@ each call made after the host's sign-in and checked and scoped by the permission
 account scope that hub_kernel-interface holds. When the host lists major versions, every
 method answers at the same address at every major, and the caller picks the major with a
 request header. A host can keep a major listed but mark it retired, and then every call
-naming it is refused as gone. A host can also mark a major it still serves deprecated, with
-the date it was deprecated and the date it stops being served, and every answer at it then
-carries headers giving those dates. Every
+naming it is refused as gone. A host can also mark a major it still serves deprecated, and
+must give the date it was deprecated and the date it stops being served, and every answer
+at it then carries headers giving those dates. Every
 answer at a major older than the newest carries a header naming the newest. A listing can give the JSON Schema of each method's answer at that major,
 and a rake task writes the same description for each major into a file a client can use
 without reaching a running host. Use this local when writing a front end, mobile app,
@@ -47,10 +47,10 @@ answer shapes and mounting the engine belong to the install local.
   lists, such as `2.0.1`, sent only when the answer was given at an older major.
 - `Deprecation` response header — the date the major was deprecated, as `@` and the Unix
   seconds of that date's midnight UTC, such as `@1790726400`, sent only when the answer was
-  given at a major the host marked deprecated and gave a deprecation date.
+  given at a major the host marked deprecated.
 - `Sunset` response header — the date a deprecated major stops being served, as an HTTP
   date such as `Wed, 31 Mar 2027 00:00:00 GMT`, sent only when the answer was given at a
-  major the host marked deprecated and gave a sunset date.
+  major the host marked deprecated.
 - `Vary` response header — `Accept-Version` on every answer from a host that lists majors,
   refusals included, so a cache keeps one copy per major.
 - `answer_shape` listing field — the JSON Schema of a method's answer at the major the
@@ -78,9 +78,11 @@ Every path in an endpoint is relative to the path the host mounted the engine at
 3. Find the majors the host lists in its initializer, where each is listed by its full
    version, such as `"2.0.1"`, and its major is the first number. A major listed with
    `retired: true` is retired: it stays listed, but every call naming it is refused with a
-   410. A major listed with `deprecated: true` is still served in full, and may carry a
-   `deprecated_on:` date on which it was deprecated and a `sunset:` date on which the host
-   plans to stop serving it. The error of a 406 answer
+   410. A major listed with `deprecated: true` is still served in full, and always carries
+   a `deprecated_on:` date on which it was deprecated and a `sunset:` date on which the host
+   plans to stop serving it. A host whose majors hold a mistake, such as a deprecated major
+   missing either date, a major listed twice, or every major retired, does not start, so at
+   least one listed major is always served. The error of a 406 answer
    also names every major listed that is not retired, and the error of a 410 names the
    newest major listed.
 
@@ -251,15 +253,11 @@ Every path in an endpoint is relative to the path the host mounted the engine at
     - `Deprecation` holds the date the pinned major was deprecated, as `@` and the Unix
       seconds of that date's midnight UTC, such as `@1790726400` for 30 September 2026, as
       RFC 9745 defines it. It is on every answer given at a deprecated major except a 406
-      or a 410, and is absent when the host gave that major no deprecation date. Its
-      presence means the host plans to stop serving the pinned major.
+      or a 410. Its presence means the host plans to stop serving the pinned major.
     - `Sunset` holds the date the deprecated major stops being served, as an HTTP date such
-      as `Wed, 31 Mar 2027 00:00:00 GMT`. It is sent only at a deprecated major, and is
-      absent when the host gave that major no sunset date, whether or not `Deprecation` is
-      sent. After that date the host may retire the major, and calls naming it are then
-      refused with a 410.
-    - A deprecated major given neither date carries neither header, so a client cannot
-      tell it from a major that is not deprecated.
+      as `Wed, 31 Mar 2027 00:00:00 GMT`. It is on every answer that carries `Deprecation`,
+      and on no other. After that date the host may retire the major, and calls naming it
+      are then refused with a 410.
     - None of these headers changes the body of an answer. An answer at the newest major
       carries no `Api-Newest-Version`, and carries `Deprecation` and `Sunset` only when the
       newest major is itself deprecated.
@@ -277,8 +275,8 @@ Every path in an endpoint is relative to the path the host mounted the engine at
     answer shape at an older major for a method that declares earlier answers, the
     `answer_shape` a listing gives at that major, the root address listing's `version`,
     the `Api-Newest-Version` header at an older major and its absence at the newest, the
-    `Deprecation` and `Sunset` header values at a deprecated major given both dates, the 406 for a major the host
-    does not list, and the 410 for a retired major.
+    `Deprecation` and `Sunset` header values at a deprecated major, the 406 for a major the
+    host does not list, and the 410 for a retired major.
 
 ## Conventions
 

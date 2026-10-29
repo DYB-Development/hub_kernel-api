@@ -29,8 +29,9 @@ JSON API's own setting is used when it is set.
 
 `HubKernel::Api.check!` raises `HubKernel::Api::UnservableHubError` when a served entry
 exposes no methods, when two served hubs answer at the same address, or when a served
-hub's exposed list has a problem, naming each. Inside `to_prepare` it runs again after
-every code reload.
+hub's exposed list has a problem, naming each. It also names each mistake in the host's
+versions, as [Versions](#versions) describes, in the same error, so every problem is named
+at once. Inside `to_prepare` it runs again after every code reload.
 
 `HubKernel::Api.hubs` reads and writes hub_kernel-interface's one served list,
 `HubKernel::Interface.hubs`, so every interface gem in the host, such as hub_kernel-mcp,
@@ -133,8 +134,7 @@ Deprecation: @1790726400
 Sunset: Wed, 31 Mar 2027 00:00:00 GMT
 ```
 
-An answer at a deprecated major given no `deprecated_on:` date carries no `Deprecation`
-header, and one given no `sunset:` date carries no `Sunset` header. An answer at the newest
+An answer at the newest
 major carries no `Api-Newest-Version` header, and carries no `Deprecation` or `Sunset`
 header unless the newest major is itself deprecated. The headers never change an answer's
 body.
@@ -157,6 +157,27 @@ A call or a listing naming a retired major is answered with status 410 and no
 
 A host that lists no majors ignores any `Accept-Version` header, answers every call with
 the method's own answer, and sends no version headers.
+
+`HubKernel::Api.check!` refuses to start a host whose versions hold a mistake, and names
+each of these:
+
+- An earlier answer declared for a major the host does not list.
+- An earlier answer declared for the newest major, which has no newer answer to translate
+  from.
+- A listed version not a string in major.minor.patch form, such as `"2.1"` or the number
+  `2`.
+- A major listed more than once.
+- A deprecated major with no `deprecated_on:` date or no `sunset:` date.
+- A `deprecated_on:` or `sunset:` date given as something other than a `Date`.
+- A version list in which every major is retired, since a call with no `Accept-Version`
+  header would have no major to be answered at.
+
+```
+Major 1 is deprecated with no sunset: date it stops being served
+Supplies declares an earlier answer to shelf_of for major 3, the newest major, which has no newer answer to translate from
+```
+
+A host that lists no majors has none of these checked.
 
 ## Answer shapes
 

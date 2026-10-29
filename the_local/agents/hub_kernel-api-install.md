@@ -35,7 +35,8 @@ in when a Rails app needs its hubs callable over HTTP.
   serving, `deprecated_on:` gives a deprecated major the `Date` it was deprecated, and
   `sunset:` gives it the `Date` it stops being served. `retired: true` marks a major the
   host keeps listed but no longer serves.
-- `HubKernel::Api.check!` — checks the served hubs and raises if any cannot be served.
+- `HubKernel::Api.check!` — checks the served hubs and the listed majors, and raises if
+  any hub cannot be served or the majors hold a mistake.
 - `HubKernel::Api::UnservableHubError` — the error `check!` raises, its message naming
   every problem on its own line.
 - `HubKernel::Api::UnservedMajorError` — the error the API raises when a call names a
@@ -94,23 +95,23 @@ in when a Rails app needs its hubs callable over HTTP.
      the one they were built against.
    - A major marked `retired: true` stays listed, and every call or listing that names it
      is answered with status 410.
-   - Keep at least one major not retired; with every listed major retired, a call that
-     names no major fails with a server error instead of an answer.
-   - A major marked `deprecated: true` is still answered. Given `deprecated_on:` with a
-     `Date`, every answer at it tells the caller the major was deprecated on that date.
-     Given `sunset:` with a `Date`, every answer at it also gives the date it stops being
-     served.
-   - A deprecated major given neither date sends the caller nothing that says it is
-     deprecated, so give it at least `deprecated_on:`.
+   - A major marked `deprecated: true` is still answered, and every answer at it gives the
+     caller its `deprecated_on:` date and its `sunset:` date.
    - `deprecated_on:` and `sunset:` on a major not marked `deprecated: true` are never sent
      to a caller.
-   - List one entry per major; two entries with the same major leave the second unused.
+   - `HubKernel::Api.check!` refuses to boot the host when the list holds any of these:
+     a version not a string in major.minor.patch form, a major listed twice, a deprecated major
+     missing `deprecated_on:` or `sunset:`, a `deprecated_on:` or `sunset:` that is not a
+     `Date`, or every listed major retired.
+   - It also refuses when a served hub declares an earlier answer for a major the host
+     does not list, or for the newest major listed. Ask the developer which majors their
+     hubs already declare earlier answers for, and list each of those majors.
 
    Ask which majors, if any, are deprecated, and for each one the date it was deprecated
-   and whether it has a date it stops being served. Ask which majors, if any, are
-   retired. Do not mark a major
-   deprecated or retired without the developer's word: deprecating one tells every client
-   built against it to move, and retiring one stops every such client getting answers.
+   and the date it stops being served; both dates are required. Ask which majors, if any,
+   are retired, and keep at least one not retired. Do not mark a major deprecated or
+   retired without the developer's word: deprecating one tells every client built against
+   it to move, and retiring one stops every such client getting answers.
 
 7. Create `config/initializers/hub_kernel_api.rb` with the answers from steps 3 to 6:
 
@@ -135,9 +136,8 @@ in when a Rails app needs its hubs callable over HTTP.
      API's controllers load, so it must be set before then.
    - Leave out the `versions` line when the developer chose to serve no majors.
    - Add `deprecated: true` only to the majors the developer named as deprecated.
-   - Add `deprecated_on:` to each of them with the date the developer gave it was
-     deprecated, and `sunset:` only to those the developer gave a date it stops being
-     served.
+   - Add `deprecated_on:` and `sunset:` to each of them, as `Date` values, with the dates
+     the developer gave.
    - Add `retired: true` only to the majors the developer named as retired.
    - `hubs` and `check!` go inside `to_prepare`, so the hub constants resolve after each
      code reload and the check runs again after each one.
@@ -155,8 +155,25 @@ in when a Rails app needs its hubs callable over HTTP.
      remove it, or expose methods on it.
    - `<Hub> and <Hub> both answer at <address>` — give one of them its own address with
      a one-pair Hash.
+   - `The listed version <version> is not in major.minor.patch form` — write that
+     entry's `version:` as a string such as `"2.1.0"`.
+   - `Major <n> is listed more than once` — keep one entry for that major.
+   - `Major <n> is deprecated with no deprecated_on: date it was deprecated` or
+     `... with no sunset: date it stops being served` — ask the developer for the missing
+     date and add it.
+   - `Major <n> gives deprecated_on: as <value>, which is not a Date` or the same for
+     `sunset:` — write the date as `Date.new(year, month, day)`.
+   - `Every listed major is retired, ...` — ask the developer which major to stop
+     retiring, or which new major to list.
+   - `<Hub> declares an earlier answer to <method> for major <n>, which the host does not
+     list` — ask the developer whether to list that major or have the hub's earlier answer
+     removed.
+   - `<Hub> declares an earlier answer to <method> for major <n>, the newest major, ...` —
+     ask the developer whether to list a newer major or have that earlier answer removed.
    - Any other line is a problem the hub reports with its own list of exposed methods;
      fix it in the hub.
+
+   Every problem is named in the one error, so fix them all before booting again.
 
 ## Conventions
 
@@ -164,10 +181,9 @@ in when a Rails app needs its hubs callable over HTTP.
 - To serve another hub later, add it to the `hubs` list inside `to_prepare` and boot
   again so `check!` runs.
 - To serve a new major, add a `HubKernel::Api::MajorVersion` to `versions`.
-- To warn clients that a major will stop being served, add `deprecated: true` and
+- To warn clients that a major will stop being served, add `deprecated: true`,
   `deprecated_on:` with the date it was deprecated, and `sunset:` with the date it stops
-  being served if the developer gives one. Retire it on that date; nothing retires it
-  when the date passes.
+  being served. Retire it on that date; nothing retires it when the date passes.
 - To stop serving a major, ask the developer whether to retire it or remove it. Adding
   `retired: true` keeps it listed, and every call that names it answers with status 410
   and a message naming the newest major. Removing it while others stay listed makes every
@@ -176,11 +192,13 @@ in when a Rails app needs its hubs callable over HTTP.
   no major to the next oldest one.
 - Removing every major turns versioning off, and calls that name a major get the
   method's own answer.
-- `check!` does not check `versions`; a mistake there, including every major being
-  retired, shows only when a call is answered.
+- Removing a major that a served hub declares an earlier answer for, or removing the
+  newest major while a hub declares an earlier answer for the one below it, stops the host
+  booting; boot again after every change to `versions` so `check!` runs.
+- With no majors listed, `check!` checks none of the version rules.
 - An edit to the initializer takes effect only after the server restarts.
-- Keep `HubKernel::Api.check!` in the initializer; without it a hub that cannot be served
-  is found only when a client calls it.
+- Keep `HubKernel::Api.check!` in the initializer; without it a hub that cannot be served,
+  or a mistake in `versions`, is found only when a client calls the API.
 - Setting the permission check and account scope is out of scope here; it belongs to
   hub_kernel-interface.
 - Declaring a method's answers at earlier majors is out of scope here; it belongs to

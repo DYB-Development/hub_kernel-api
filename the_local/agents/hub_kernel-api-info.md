@@ -38,8 +38,9 @@ This local declares no commands. The surface is split between the other two loca
 - **hub_kernel-api-install** owns adding the gem to a host, the configuration that
   names the base controller, the person and account methods, the served hubs, the
   majors served, which of them are deprecated, when each was deprecated and when each
-  stops, and which are retired, the startup check that rejects a hub that cannot be served, the
-  errors a host can meet, and mounting the engine.
+  stops, and which are retired, the startup check that rejects a hub that cannot be served
+  or a list of majors with a mistake in it, the errors a host can meet, and mounting the
+  engine.
 - **hub_kernel-api-develop** owns the HTTP endpoints a client calls: the listing at
   the root address, the listing at a hub's address, and the call to one exposed
   method, with their verbs, request values, the headers that name and report a
@@ -99,13 +100,11 @@ This local declares no commands. The surface is split between the other two loca
 - **Newest major** — the listed major with the highest number. Every answer at an
   older major carries a header giving the newest major's full version, so a caller
   learns a newer major exists without asking.
-- **Deprecated major** — a major the host still serves but plans to stop serving,
-  optionally with the date it was deprecated and the date it stops. Every answer at it
-  is given as usual, and carries a header giving the date it was deprecated when that
-  date is given and a header giving the date it stops when that date is given. A
-  deprecated major given neither date carries neither header. The headers never change
-  an answer's body, and a deprecated major can still be the one a call that names no
-  major is answered at.
+- **Deprecated major** — a major the host still serves but plans to stop serving, given
+  the date it was deprecated and the date it stops, both as dates. Every answer at it is
+  given as usual, and carries a header giving each of those dates. The headers never
+  change an answer's body, and a deprecated major can still be the one a call that names
+  no major is answered at.
 - **Unserved major** — a call or listing naming a major the host does not list is
   answered as not acceptable, with a message naming the majors that are served.
 - **Retired major** — a major the host still lists but has marked as no longer served.
@@ -114,7 +113,14 @@ This local declares no commands. The surface is split between the other two loca
   a call that names no major is answered at.
 - **No majors listed** — a host that lists no majors does no versioning: every call
   gets the method's own answer, every listing gives each method's own shape, no
-  version is reported, and no description file is written.
+  version is reported, no description file is written, and the startup check checks
+  no majors.
+- **Startup check** — run when the host boots, it refuses to let the app start while a
+  served hub cannot be served or the listed majors hold a mistake, and names every
+  problem it found. A mistake in the majors is a version not a string in major.minor.patch form,
+  a major listed twice, a deprecated major missing either date, a date given as
+  something other than a date, every major retired, or a hub declaring an earlier answer
+  for a major the host does not list or for the newest major.
 - **Description file** — one JSON file per listed major that is not retired, written into the host app on
   request and named after the major. It gives the major's full version and every served
   hub's methods, keyed by address, each with its values, verb and answer shape at that
