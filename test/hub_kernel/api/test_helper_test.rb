@@ -21,4 +21,8 @@ class HubKernel::Api::TestHelperTest < ActiveSupport::TestCase
   test "the assertion passes when a method's own answer matches its shape at the newest major" do
     assert_answer_shape(Pantry, :shelf_of, Pantry.shelf_of(item: "flour"), major: 3)
   end
+
+  test "the assertion passes when a method's own answer translated down to an older major matches that major's shape" do
+    assert_answer_shape(Pantry, :shelf_of, Pantry.shelf_of(item: "flour"), major: 1)
+  end
 end
