@@ -10,12 +10,14 @@ module HubKernel
         raise ActionController::RoutingError, "Not found" unless asked_with_the_right_verb?
 
         HubKernel::Interface::CallReasons.refuse_unlisted_values(hub, params[:name], values: values, person: caller_person, account: caller_account)
-        render json: { answer: hub.call_exposed(params[:name], values: values, person: caller_person, account: caller_account) }
+        render json: { answer: at_major(hub.call_exposed(params[:name], values: values, person: caller_person, account: caller_account)) }
       end
 
       private
 
       def asked_with_the_right_verb? = hub.exposed(params[:name])&.writes == request.post?
+
+      def at_major(answer) = hub.exposed(params[:name]).earlier_answers.sort_by(&:major).reverse.reduce(answer) { |translated, earlier| earlier.translate(translated) }
 
       def values = request.query_parameters.merge(request.request_parameters).deep_symbolize_keys
 
