@@ -8,4 +8,8 @@ class HubKernel::Api::MajorVersionTest < ActiveSupport::TestCase
   test "a host can mark a listed major retired" do
     assert_predicate HubKernel::Api::MajorVersion.new(version: "1.0.0", retired: true), :retired?
   end
+
+  test "a host can mark a listed major deprecated" do
+    assert_predicate HubKernel::Api::MajorVersion.new(version: "2.1.0", deprecated: true), :deprecated?
+  end
 end
