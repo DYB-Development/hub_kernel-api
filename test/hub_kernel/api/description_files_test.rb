@@ -41,4 +41,15 @@ class HubKernel::Api::DescriptionFilesTest < ActiveSupport::TestCase
   ensure
     HubKernel::Api.versions = listed
   end
+
+  test "writing the description files leaves a major's file as it was when its current description removes something the file holds" do
+    Dir.mktmpdir do |directory|
+      description = JSON.parse(HubKernel::Api::Description.at(HubKernel::Api.versions.second).to_json)
+      description["hubs"]["shop"] << { "name" => "discount_of", "takes" => [ "item" ], "verb" => "GET" }
+      File.write(File.join(directory, "v2.json"), JSON.pretty_generate(description))
+
+      assert_raises(HubKernel::Api::BreakingChangeError) { HubKernel::Api::DescriptionFiles.write(directory) }
+      assert_equal JSON.pretty_generate(description), File.read(File.join(directory, "v2.json"))
+    end
+  end
 end
