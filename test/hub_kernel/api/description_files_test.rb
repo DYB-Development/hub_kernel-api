@@ -77,4 +77,15 @@ class HubKernel::Api::DescriptionFilesTest < ActiveSupport::TestCase
       assert_equal JSON.pretty_generate(HubKernel::Api::Description.at(HubKernel::Api.versions.second)), File.read(File.join(directory, "v2.json"))
     end
   end
+
+  test "writing the description files is refused, naming each addition, when a major adds to its file without raising its minor" do
+    Dir.mktmpdir do |directory|
+      description = JSON.parse(HubKernel::Api::Description.at(HubKernel::Api.versions.second).to_json)
+      description["hubs"]["shop"].first["takes"] = []
+      File.write(File.join(directory, "v2.json"), JSON.pretty_generate(description))
+
+      error = assert_raises(HubKernel::Api::BreakingChangeError) { HubKernel::Api::DescriptionFiles.write(directory) }
+      assert_equal "Major 2 adds shop.price_of.takes.item without raising its minor above 2.1.0", error.message
+    end
+  end
 end
