@@ -10,6 +10,10 @@ class AnswerShapesTest < ActionDispatch::IntegrationTest
     }
 
     def self.shelf_of(item:) = { item: item, aisle: 4 }
+
+    exposes :label_of, takes: %i[item], writes: false
+
+    def self.label_of(item:) = item.upcase
   end
 
   setup do
@@ -23,5 +27,11 @@ class AnswerShapesTest < ActionDispatch::IntegrationTest
     get "/hubs/pantry", headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "3" }, as: :json
 
     assert_equal({ "type" => "object", "required" => [ "aisle" ] }, response.parsed_body.first["answer_shape"])
+  end
+
+  test "a hub listing shows a method that declares no answer shape with no shape" do
+    get "/hubs/pantry", headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "3" }, as: :json
+
+    assert_equal({ "name" => "label_of", "takes" => [ "item" ], "verb" => "GET" }, response.parsed_body.find { |listed| listed["name"] == "label_of" })
   end
 end
