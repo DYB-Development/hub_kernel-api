@@ -14,6 +14,12 @@ class AnswerShapesTest < ActionDispatch::IntegrationTest
     exposes :label_of, takes: %i[item], writes: false
 
     def self.label_of(item:) = item.upcase
+
+    exposes :aisle_of, takes: %i[item], writes: false, answer_shape: { "type" => "integer" }, earlier_answers: {
+      2 => { translation: ->(answer) { answer.to_s }, answer_shape: { "type" => "string" } }
+    }
+
+    def self.aisle_of(item:) = 4
   end
 
   setup do
@@ -39,5 +45,11 @@ class AnswerShapesTest < ActionDispatch::IntegrationTest
     get "/hubs/pantry", headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
 
     assert_equal({ "type" => "object", "required" => [ "shelf" ] }, response.parsed_body.first["answer_shape"])
+  end
+
+  test "a hub listing at an older major with no earlier answer declared for it shows the answer shape at the major after it" do
+    get "/hubs/pantry", headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "1" }, as: :json
+
+    assert_equal({ "type" => "string" }, response.parsed_body.find { |listed| listed["name"] == "aisle_of" }["answer_shape"])
   end
 end
