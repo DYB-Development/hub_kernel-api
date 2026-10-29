@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-29
+
+### Added
+- `HubKernel::Api.versions` lists the major versions a host serves as `HubKernel::Api::MajorVersion` entries, each with its full version in major.minor.patch form.
+- A caller names a major in an `Accept-Version` request header, a call with no header is answered at the oldest major listed that is not retired, and every answer reports its full version in `Api-Version` and carries `Vary: Accept-Version`.
+- A call naming an older major answers with the method's answer passed through each earlier answer its hub declares, newest first.
+- A call naming a major the host does not list is refused with status 406 and `HubKernel::Api::UnservedMajorError`.
+- A major can be listed `retired: true`, and a call or listing naming it is refused with status 410 and `HubKernel::Api::RetiredMajorError`.
+- A major can be listed `deprecated: true` with `deprecated_on:` and `sunset:` dates, and answers at it carry RFC 9745 `Deprecation` and `Sunset` headers.
+- Every answer at a major older than the newest carries an `Api-Newest-Version` header.
+- Hub listings give each method's `answer_shape` at the major named, and a GET at the API's root address lists every served hub's methods with their shapes and the major's full version.
+- `bin/rails hub_kernel_api:describe` writes one JSON description file per major not retired into `api_descriptions`.
+- `bin/rails hub_kernel_api:check_descriptions` raises `HubKernel::Api::BreakingChangeError` when a major removes or renames something its committed file holds, or adds something without raising its minor, and the describe task refuses to write while the check would fail.
+- `HubKernel::Api::TestHelper#assert_answer_shape` checks a method's answer against its shape at a major, using json_schemer from the host's test group.
+- `HubKernel::Api.check!` names version mistakes at boot together with problems in the served list.
+
+### Changed
+- hub_kernel-api requires hub_kernel-interface 0.10.
+- A host that lists no majors ignores `Accept-Version` and answers every call as before.
+
 ## [0.9.0] - 2026-10-14
 
 ### Changed
