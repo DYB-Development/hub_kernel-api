@@ -5,7 +5,7 @@ module HubKernel
         require_json_schemer
 
         exposure = hub.exposed(name)
-        listed = HubKernel::Api.versions.find { |version| version.major == major }
+        listed = HubKernel::Api.versions.find { |version| version.major == major } || flunk("The host lists no major #{major} to check #{name} at")
         shape = JSONSchemer.schema(HubKernel::Api::Description.described(exposure, listed)[:answer_shape])
         differences = shape.validate(HubKernel::Api::EarlierAnswers.translate(answer, exposure, listed)).map { |difference| difference["error"] }
         assert differences.empty?, [ "The answer to #{name} at major #{major} does not match its shape", *differences ].join("\n")

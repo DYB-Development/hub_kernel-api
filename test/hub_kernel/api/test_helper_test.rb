@@ -49,4 +49,10 @@ class HubKernel::Api::TestHelperTest < ActiveSupport::TestCase
 
     assert_equal 'assert_answer_shape needs the json_schemer gem, add gem "json_schemer" to the test group of your Gemfile', failure.message
   end
+
+  test "the assertion fails naming a major the host does not list" do
+    failure = assert_raises(Minitest::Assertion) { assert_answer_shape(Pantry, :shelf_of, Pantry.shelf_of(item: "flour"), major: 7) }
+
+    assert_equal "The host lists no major 7 to check shelf_of at", failure.message
+  end
 end
