@@ -100,4 +100,10 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
 
     assert_raises(HubKernel::Api::UnservableHubError, match: "Every listed major is retired, so a call with no Accept-Version has no major to be answered at") { HubKernel::Api.check! }
   end
+
+  test "problems in the served list and in the versions stop the app together in one error naming each" do
+    HubKernel::Api.hubs = [ Bakery, Larder ]
+
+    assert_raises(HubKernel::Api::UnservableHubError, match: "HubKernel::ApiCheckTest::Bakery exposes no methods to serve\nHubKernel::ApiCheckTest::Larder declares an earlier answer to count_jars for major 7, which the host does not list") { HubKernel::Api.check! }
+  end
 end

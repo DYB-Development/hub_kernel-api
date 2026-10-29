@@ -25,9 +25,15 @@ module HubKernel
     def self.find(name) = HubKernel::Interface.find(name)
 
     def self.check!
-      HubKernel::Interface.check!
-      problems = unlisted_earlier_answers + newest_earlier_answers + unformed_versions + doubled_majors + unsunset_majors + all_retired
+      problems = served_list_problems + unlisted_earlier_answers + newest_earlier_answers + unformed_versions + doubled_majors + unsunset_majors + all_retired
       raise UnservableHubError, problems.join("\n") if problems.any?
+    end
+
+    def self.served_list_problems
+      HubKernel::Interface.check!
+      []
+    rescue UnservableHubError => error
+      error.message.split("\n")
     end
 
     def self.unlisted_earlier_answers
@@ -65,6 +71,6 @@ module HubKernel
     end
 
     def self.exposing_hubs = HubKernel::Interface.served.values.uniq.select { |hub| hub.respond_to?(:exposures) }
-    private_class_method :unlisted_earlier_answers, :newest_earlier_answers, :unformed_versions, :doubled_majors, :unsunset_majors, :all_retired, :earlier_answers, :exposing_hubs
+    private_class_method :served_list_problems, :unlisted_earlier_answers, :newest_earlier_answers, :unformed_versions, :doubled_majors, :unsunset_majors, :all_retired, :earlier_answers, :exposing_hubs
   end
 end
