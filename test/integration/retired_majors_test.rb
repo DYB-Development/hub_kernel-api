@@ -37,4 +37,10 @@ class RetiredMajorsTest < ActionDispatch::IntegrationTest
 
     assert_equal "2.1.0", response.headers["Api-Version"]
   end
+
+  test "a write at a retired major is refused end to end with status 410, the reason, and no Api-Version" do
+    post "/hubs/shop/restock", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "1" }, as: :json
+
+    assert_equal [ 410, { "error" => "Major 1 is no longer served, the newest major is 3" }, nil ], [ response.status, response.parsed_body, response.headers["Api-Version"] ]
+  end
 end
