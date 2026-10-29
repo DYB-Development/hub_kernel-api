@@ -26,7 +26,7 @@ module HubKernel
     def self.find(name) = HubKernel::Interface.find(name)
 
     def self.check!
-      problems = served_list_problems + unlisted_earlier_answers + newest_earlier_answers + unformed_versions + doubled_majors + unsunset_majors + all_retired + non_dates(:deprecated_on)
+      problems = served_list_problems + unlisted_earlier_answers + newest_earlier_answers + unformed_versions + doubled_majors + unsunset_majors + all_retired + non_dates(:deprecated_on) + non_dates(:sunset)
       raise UnservableHubError, problems.join("\n") if problems.any?
     end
 

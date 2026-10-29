@@ -112,4 +112,10 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
 
     assert_raises(HubKernel::Api::UnservableHubError, match: 'Major 1 gives deprecated_on: as "2026-09-30", which is not a Date') { HubKernel::Api.check! }
   end
+
+  test "a sunset: date given as something other than a Date stops the app and is named" do
+    HubKernel::Api.versions = [ HubKernel::Api::MajorVersion.new(version: "1.0.0", deprecated: true, deprecated_on: Date.new(2026, 9, 30), sunset: "2027-03-31"), HubKernel::Api::MajorVersion.new(version: "2.1.0") ]
+
+    assert_raises(HubKernel::Api::UnservableHubError, match: 'Major 1 gives sunset: as "2027-03-31", which is not a Date') { HubKernel::Api.check! }
+  end
 end
