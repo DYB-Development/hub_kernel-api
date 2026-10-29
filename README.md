@@ -131,7 +131,8 @@ Deprecation: true
 Sunset: Wed, 31 Mar 2027 00:00:00 GMT
 ```
 
-An answer at the newest major carries none of these headers. The headers never change an
+An answer at a deprecated major given no `sunset:` date carries no `Sunset` header. An
+answer at the newest major carries none of these headers. The headers never change an
 answer's body.
 
 A call naming a major the host does not list is answered with status 406 and no
