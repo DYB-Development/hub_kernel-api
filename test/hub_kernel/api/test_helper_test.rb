@@ -16,6 +16,10 @@ class HubKernel::Api::TestHelperTest < ActiveSupport::TestCase
     exposes :bin_of, takes: %i[item], writes: false, answer_shape: { "type" => "object", "properties" => { "aisle" => { "type" => "integer" }, "item" => { "type" => "string" } } }
 
     def self.bin_of(item:) = { item: item, aisle: 4 }
+
+    exposes :label_of, takes: %i[item], writes: false
+
+    def self.label_of(item:) = item.upcase
   end
 
   test "the assertion fails when a method's answer does not match its shape at the major" do
@@ -54,5 +58,11 @@ class HubKernel::Api::TestHelperTest < ActiveSupport::TestCase
     failure = assert_raises(Minitest::Assertion) { assert_answer_shape(Pantry, :shelf_of, Pantry.shelf_of(item: "flour"), major: 7) }
 
     assert_equal "The host lists no major 7 to check shelf_of at", failure.message
+  end
+
+  test "the assertion fails naming a method that declares no answer shape at the major" do
+    failure = assert_raises(Minitest::Assertion) { assert_answer_shape(Pantry, :label_of, Pantry.label_of(item: "flour"), major: 3) }
+
+    assert_equal "label_of declares no answer shape at major 3", failure.message
   end
 end
