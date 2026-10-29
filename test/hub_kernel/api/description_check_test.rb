@@ -49,4 +49,17 @@ class HubKernel::Api::DescriptionCheckTest < ActiveSupport::TestCase
   ensure
     HubKernel::Api.versions = listed
   end
+
+  test "checking the committed files raises an error naming each removal" do
+    major = HubKernel::Api.versions.second
+
+    Dir.mktmpdir do |directory|
+      description = committed(major)
+      description["hubs"]["pantry"].first["answer_shape"]["properties"]["shelf"] = { "type" => "string" }
+      commit(directory, major, description)
+
+      error = assert_raises(HubKernel::Api::BreakingChangeError) { HubKernel::Api::DescriptionCheck.check!(directory) }
+      assert_equal "Major 2 removes or renames pantry.shelf_of.answer_shape.properties.shelf, which its committed file holds", error.message
+    end
+  end
 end

@@ -2,7 +2,13 @@ require "json"
 
 module HubKernel
   module Api
+    class BreakingChangeError < StandardError; end
+
     module DescriptionCheck
+      def self.check!(directory)
+        raise BreakingChangeError, removals(directory).join("\n")
+      end
+
       def self.removals(directory)
         committed_majors(directory).flat_map do |major|
           missing(keyed(committed_hubs(directory, major)), keyed(current_hubs(major))).map { |path| "Major #{major.major} removes or renames #{path.join(".")}, which its committed file holds" }
