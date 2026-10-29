@@ -1,3 +1,5 @@
+require "active_support/core_ext/array/conversions"
+
 module HubKernel
   module Api
     class HubController < HubKernel::Api.base_controller.constantize
@@ -10,9 +12,13 @@ module HubKernel
 
       def hub = @hub ||= HubKernel::Api.find(params[:hub]) || raise(ActionController::RoutingError, "Not found")
 
-      def major = @major ||= request.headers["Accept-Version"] ? named_major : HubKernel::Api.versions.min_by(&:major)
+      def major = @major ||= named_version ? named_major : HubKernel::Api.versions.min_by(&:major)
 
-      def named_major = HubKernel::Api.versions.find { |listed| listed.major.to_s == request.headers["Accept-Version"] } || raise(HubKernel::Api::UnservedMajorError)
+      def named_version = request.headers["Accept-Version"]
+
+      def named_major = HubKernel::Api.versions.find { |listed| listed.major.to_s == named_version } || raise(HubKernel::Api::UnservedMajorError, "Major #{named_version} is not served, the majors served are #{served_majors}")
+
+      def served_majors = HubKernel::Api.versions.map(&:major).to_sentence(last_word_connector: " and ")
 
       def report_major
         response.headers["Api-Version"] = major.version

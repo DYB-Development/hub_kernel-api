@@ -18,4 +18,10 @@ class VersionedCallsTest < ActionDispatch::IntegrationTest
 
     assert_response :not_acceptable
   end
+
+  test "a call naming a major the host does not list is answered with an error naming the majors served" do
+    get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "7" }, as: :json
+
+    assert_equal({ "error" => "Major 7 is not served, the majors served are 1, 2 and 3" }, response.parsed_body)
+  end
 end
