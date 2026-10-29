@@ -11,6 +11,14 @@ class HubKernel::Api::DescriptionCheckTest < ActiveSupport::TestCase
     def self.shelf_of(item:) = { aisle: 4, item: item }
   end
 
+  module Larder
+    extend HubKernel::Exposes
+
+    exposes :count_of, takes: %i[item], writes: false, answer_shape: { "anyOf" => [ { "type" => "integer" }, { "type" => "string" } ] }
+
+    def self.count_of(item:) = item.size
+  end
+
   setup do
     @served = HubKernel::Api.hubs
     HubKernel::Api.hubs = [ { "pantry" => Pantry } ]
@@ -86,6 +94,19 @@ class HubKernel::Api::DescriptionCheckTest < ActiveSupport::TestCase
       commit(directory, major, description)
 
       assert_nothing_raised { HubKernel::Api::DescriptionCheck.check!(directory) }
+    end
+  end
+
+  test "an object a list in an answer shape holds without a name is compared by its position in the list" do
+    HubKernel::Api.hubs = [ { "larder" => Larder } ]
+    major = HubKernel::Api.versions.second
+
+    Dir.mktmpdir do |directory|
+      description = committed(major)
+      description["hubs"]["larder"].first["answer_shape"]["anyOf"] << { "type" => "null" }
+      commit(directory, major, description)
+
+      assert_equal [ "Major 2 removes or renames larder.count_of.answer_shape.anyOf.2, which its committed file holds" ], HubKernel::Api::DescriptionCheck.removals(directory)
     end
   end
 end

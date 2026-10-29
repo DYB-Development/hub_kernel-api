@@ -39,7 +39,7 @@ module HubKernel
       def self.keyed(value)
         case value
         when Hash then value.transform_values { |inner| keyed(inner) }
-        when Array then value.to_h { |element| element.is_a?(Hash) ? [ element["name"], keyed(element) ] : [ element, {} ] }
+        when Array then value.each_with_index.to_h { |element, position| element.is_a?(Hash) ? [ element.fetch("name", position), keyed(element) ] : [ element, {} ] }
         else { value => {} }
         end
       end
