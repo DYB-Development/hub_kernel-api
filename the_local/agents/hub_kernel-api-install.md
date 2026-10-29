@@ -1,6 +1,6 @@
 ---
 name: hub_kernel-api-install
-description: Use to hook hub_kernel-api into a project — adding the gem, naming the base controller and its person and account methods, listing the served hubs, running the startup check, and mounting the engine.
+description: Use to hook hub_kernel-api into a project — adding the gem, naming the base controller and its person and account methods, listing the served hubs and the majors served, running the startup check, and mounting the engine.
 tools: Bash, Read, Edit
 scope: hub JSON API — serving a hub_kernel hub's exposed methods as a JSON API in a host Rails app, each call behind the host's own sign-in and hub_kernel-interface's permission check and account scope
 ---
@@ -20,14 +20,24 @@ in when a Rails app needs its hubs callable over HTTP.
 - `HubKernel::Api.base_controller=` — the name, as a String, of the host controller the
   API's controllers inherit from; defaults to `"ActionController::API"`.
 - `HubKernel::Api.person_method=` — the name, as a Symbol, of the method on the base
-  controller that returns the person a call is made for; no default.
+  controller that returns the person a call is made for; when unset, the API uses
+  `HubKernel::Interface.person_method`.
 - `HubKernel::Api.account_method=` — the name, as a Symbol, of the method on the base
-  controller that returns the account a call is made for; no default.
+  controller that returns the account a call is made for; when unset, the API uses
+  `HubKernel::Interface.account_method`.
 - `HubKernel::Api.hubs=` — the Array of hubs the API serves, each a hub module or a
   one-pair Hash of address to hub module; defaults to empty.
+- `HubKernel::Api.versions=` — the Array of majors the API serves, each a
+  `HubKernel::Api::MajorVersion`; defaults to empty, which turns versioning off.
+- `HubKernel::Api::MajorVersion` — one served major, built as
+  `HubKernel::Api::MajorVersion.new(version: "1.4.0")`; its major is the first part of
+  the version.
 - `HubKernel::Api.check!` — checks the served hubs and raises if any cannot be served.
 - `HubKernel::Api::UnservableHubError` — the error `check!` raises, its message naming
   every problem on its own line.
+- `HubKernel::Api::UnservedMajorError` — the error the API raises when a call names a
+  major the host does not list; the API answers that call with status 406 and the
+  error's message, and the host does not rescue it.
 - `mount HubKernel::Api::Engine` — the routes line that puts the API at a path in the host.
 
 ## How to use it
@@ -55,17 +65,38 @@ in when a Rails app needs its hubs callable over HTTP.
    Do not leave the default `ActionController::API`: it has no sign-in and no person or
    account method, so every call would fail.
 
-4. Ask the developer which hubs to serve and at what address each answers. A hub module
+4. Check whether the host already sets `HubKernel::Interface.person_method` and
+   `HubKernel::Interface.account_method`, for example for hub_kernel-mcp. If it does and
+   the base controller defines those same methods, ask the developer whether to rely on
+   them or to set `HubKernel::Api.person_method` and `HubKernel::Api.account_method`. If
+   it does not, set both on `HubKernel::Api`.
+
+5. Ask the developer which hubs to serve and at what address each answers. A hub module
    answers at its module name underscored, so `Supplies` answers at `supplies`. To use a
    different address, the hub is listed as a one-pair Hash, `{ "money" => Billing::Ledger }`.
-   Every listed hub must expose methods, and no two may share an address.
+   Every listed hub must expose methods, and no two may share an address. The served list
+   is the one hub_kernel-interface holds, so another interface gem in the host, such as
+   hub_kernel-mcp, serves the same list; set it once, through either gem.
 
-5. Create `config/initializers/hub_kernel_api.rb` with the answers from steps 3 and 4:
+6. Ask the developer whether the API serves major versions, and if it does, the full
+   version of each major, in major.minor.patch form. Put these facts to them:
+   - With no majors listed, every call gets the method's own answer and the API reports
+     no version.
+   - With majors listed, a call that names no major is answered at the oldest major
+     listed, so listing majors on a host with existing clients changes what those
+     clients receive unless the oldest major is the one they were built against.
+   - List one entry per major; two entries with the same major leave the second unused.
+
+7. Create `config/initializers/hub_kernel_api.rb` with the answers from steps 3 to 6:
 
    ```ruby
    HubKernel::Api.base_controller = "Api::HubBaseController"
    HubKernel::Api.person_method = :current_person
    HubKernel::Api.account_method = :current_account
+   HubKernel::Api.versions = [
+     HubKernel::Api::MajorVersion.new(version: "1.4.0"),
+     HubKernel::Api::MajorVersion.new(version: "2.0.1")
+   ]
 
    Rails.application.config.to_prepare do
      HubKernel::Api.hubs = [ Supplies, { "money" => Billing::Ledger } ]
@@ -73,20 +104,21 @@ in when a Rails app needs its hubs callable over HTTP.
    end
    ```
 
-   - `base_controller`, `person_method` and `account_method` go at the top of the file,
-     outside `to_prepare`. The base controller name is read once, when the API's
-     controllers load, so it must be set before then.
+   - `base_controller`, `person_method`, `account_method` and `versions` go at the top of
+     the file, outside `to_prepare`. The base controller name is read once, when the
+     API's controllers load, so it must be set before then.
+   - Leave out the `versions` line when the developer chose to serve no majors.
    - `hubs` and `check!` go inside `to_prepare`, so the hub constants resolve after each
      code reload and the check runs again after each one.
 
-6. Ask the developer the path to mount the API at, then add the mount to
+8. Ask the developer the path to mount the API at, then add the mount to
    `config/routes.rb`:
 
    ```ruby
    mount HubKernel::Api::Engine => "/api/v1/hubs"
    ```
 
-7. Boot the app, for example with `bin/rails runner "puts :ok"`. A
+9. Boot the app, for example with `bin/rails runner "puts :ok"`. A
    `HubKernel::Api::UnservableHubError` at boot names each problem:
    - `<Hub> exposes no methods to serve` — the entry is not a hub with exposed methods;
      remove it, or expose methods on it.
@@ -100,10 +132,15 @@ in when a Rails app needs its hubs callable over HTTP.
 - Run `bin/rails routes` after mounting and confirm the engine appears at the chosen path.
 - To serve another hub later, add it to the `hubs` list inside `to_prepare` and boot
   again so `check!` runs.
+- To serve a new major, add a `HubKernel::Api::MajorVersion` to `versions`. Removing a
+  major makes every call that names it answer with status 406.
+- `check!` does not check `versions`; a mistake there shows only when a call is answered.
 - An edit to the initializer takes effect only after the server restarts.
 - Keep `HubKernel::Api.check!` in the initializer; without it a hub that cannot be served
   is found only when a client calls it.
 - Setting the permission check and account scope is out of scope here; it belongs to
   hub_kernel-interface.
-- Calling the API, its responses and its error statuses are out of scope here; they
-  belong to the develop local.
+- Declaring a method's answers at earlier majors is out of scope here; it belongs to
+  hub_kernel-interface.
+- Calling the API, naming a major on a call, its responses and its error statuses are out
+  of scope here; they belong to the develop local.
