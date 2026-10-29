@@ -21,6 +21,9 @@ develop:
   - POST /<hub>/<method>
   - Accept-Version
   - Api-Version
+  - Api-Newest-Version
+  - Deprecation
+  - Sunset
   - Vary
   - answer_shape
   - bin/rails hub_kernel_api:describe

@@ -113,6 +113,27 @@ Every answer at a listed major, including a hub listing and a hub's refusal, car
 `Api-Version` header giving the full version it was answered at. Every answer, including
 the refusal below, carries a `Vary: Accept-Version` header.
 
+A host marks a major it still serves but plans to stop serving deprecated, and gives the
+date it stops being served:
+
+```ruby
+HubKernel::Api::MajorVersion.new(version: "1.4.0", deprecated: true, sunset: Date.new(2027, 3, 31))
+```
+
+Every answer at a major older than the newest listed carries an `Api-Newest-Version` header
+giving the newest major's full version. Every answer at a deprecated major also carries a
+`Deprecation: true` header and a `Sunset` header giving its date as an HTTP date:
+
+```
+Api-Version: 1.4.0
+Api-Newest-Version: 2.0.1
+Deprecation: true
+Sunset: Wed, 31 Mar 2027 00:00:00 GMT
+```
+
+An answer at the newest major carries none of these headers. The headers never change an
+answer's body.
+
 A call naming a major the host does not list is answered with status 406 and no
 `Api-Version` header. The controller raises `HubKernel::Api::UnservedMajorError` and
 renders its message, which names every listed major that is not retired:
