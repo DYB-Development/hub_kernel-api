@@ -54,4 +54,10 @@ class VersionedCallsTest < ActionDispatch::IntegrationTest
 
     assert_equal({ "answer" => { "item" => "soap", "shelf" => 4 } }, response.parsed_body)
   end
+
+  test "a call naming the newest major answers with the method's own answer" do
+    get "/hubs/pantry/shelf_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "3" }, as: :json
+
+    assert_equal({ "answer" => { "item" => "soap", "aisle" => 4 } }, response.parsed_body)
+  end
 end
