@@ -28,6 +28,8 @@ develop:
   - answer_shape
   - bin/rails hub_kernel_api:describe
   - api_descriptions/v<major>.json
+  - HubKernel::Api::TestHelper
+  - assert_answer_shape
 
 sources:
   - lib/hub_kernel/api.rb
@@ -35,6 +37,8 @@ sources:
   - lib/hub_kernel/api/major_version.rb
   - lib/hub_kernel/api/description.rb
   - lib/hub_kernel/api/description_files.rb
+  - lib/hub_kernel/api/earlier_answers.rb
+  - lib/hub_kernel/api/test_helper.rb
   - lib/tasks/hub_kernel_api.rake
   - config/routes.rb
   - app/controllers/hub_kernel/api/hub_controller.rb
