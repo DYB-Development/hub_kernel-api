@@ -71,4 +71,15 @@ class VersionedCallsTest < ActionDispatch::IntegrationTest
   ensure
     HubKernel::Api.versions = listed
   end
+
+  test "a host that lists no majors answers a method that declares earlier answers with its own answer" do
+    listed = HubKernel::Api.versions
+    HubKernel::Api.versions = []
+
+    get "/hubs/pantry/shelf_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_equal({ "answer" => { "item" => "soap", "aisle" => 4 } }, response.parsed_body)
+  ensure
+    HubKernel::Api.versions = listed
+  end
 end
