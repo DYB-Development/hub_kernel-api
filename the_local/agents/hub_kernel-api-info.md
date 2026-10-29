@@ -1,6 +1,6 @@
 ---
 name: hub_kernel-api-info
-description: Use to learn what hub_kernel-api offers — serving a hub's exposed methods as a JSON API, the served hubs and their addresses, reads and writes, and how sign-in, permission and account scope apply to each call.
+description: Use to learn what hub_kernel-api offers — serving a hub's exposed methods as a JSON API, the served hubs and their addresses, reads and writes, the major versions a host serves, and how sign-in, permission and account scope apply to each call.
 tools: Read
 scope: hub JSON API — serving a hub_kernel hub's exposed methods as a JSON API in a host Rails app, each call behind the host's own sign-in and hub_kernel-interface's permission check and account scope
 ---
@@ -22,24 +22,27 @@ Reach for it when a hub's exposed methods need to be called over HTTP, by a mobi
 app, another service or a front end, without writing a controller per method. Each
 call runs the host's own sign-in first, then hub_kernel-interface's permission check
 and account scope, so the API never shows a caller more than the app itself would.
+A host can also serve several major versions of the API at the same addresses, so an
+older client keeps getting the answers it was built for after a method's answer changes.
 
 ## Interface
 
 This local declares no commands. The surface is split between the other two locals:
 
 - **hub_kernel-api-install** owns adding the gem to a host, the configuration that
-  names the base controller, the person and account methods and the served hubs, the
-  startup check that rejects a hub that cannot be served, and mounting the engine.
+  names the base controller, the person and account methods, the served hubs and the
+  majors served, the startup check that rejects a hub that cannot be served, the
+  errors a host can meet, and mounting the engine.
 - **hub_kernel-api-develop** owns the HTTP endpoints a client calls: the listing at a
   hub's address and the call to one exposed method, with their verbs, request values,
-  responses and error statuses.
+  the headers that name and report a version, responses and error statuses.
 
 ## How to use it
 
-- To put the API into a Rails app, or to serve another hub from one that has it, use
-  the install local.
-- To write a client against the API, or to work out why a call answered as it did,
-  use the develop local.
+- To put the API into a Rails app, to serve another hub from one that has it, or to
+  list the majors a host serves, use the install local.
+- To write a client against the API, to call it at a particular major, or to work
+  out why a call answered as it did, use the develop local.
 
 ## Conventions
 
@@ -64,3 +67,15 @@ This local declares no commands. The surface is split between the other two loca
   found, so a caller cannot tell a forbidden method from a missing one. A call the hub
   itself refuses, or one missing a required value, is answered as unprocessable with
   the reason.
+- **Major and full version** — the host lists each major it serves by a full version
+  in major.minor.patch form, and the major is that version's first part. Every
+  method answers at the same address at every major, and a call that names no major
+  is answered at the oldest one listed.
+- **Earlier answer** — a hub method always answers in the newest major's shape. A
+  method whose answer changed declares, through hub_kernel-interface, how to turn its
+  answer back into an older major's shape, and a call at an older major gets the
+  answer passed through each of those from the newest down to the major named.
+- **Unserved major** — a call naming a major the host does not list is answered as
+  not acceptable, with a message naming the majors that are served.
+- **No majors listed** — a host that lists no majors does no versioning: every call
+  gets the method's own answer and no version is reported.

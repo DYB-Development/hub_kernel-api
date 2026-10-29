@@ -73,6 +73,51 @@ is shown nothing.
 | A permitted call sends a value the method is not listed with | 422 | `{"error": "<method> does not take <values>"}` |
 | A record the call names does not exist | 404 | `{"error": "No <record> has the id <id>"}` |
 
+## Versions
+
+A host lists the major versions it serves, each by its full version in major.minor.patch
+form. The major is the first part of that version:
+
+```ruby
+HubKernel::Api.versions = [
+  HubKernel::Api::MajorVersion.new(version: "1.4.0"),
+  HubKernel::Api::MajorVersion.new(version: "2.0.1")
+]
+```
+
+A method answers at the same address at every major. A caller names the major it was built
+for in an `Accept-Version` request header, such as `Accept-Version: 1`. A call that sends no
+`Accept-Version` header is answered at the oldest major listed.
+
+A hub method answers in the newest major's shape. A method whose answer changed in a newer
+major declares its earlier answers with `exposes`, as hub_kernel-interface's readme
+describes:
+
+```ruby
+exposes :shelf_of, takes: %i[item], writes: false, earlier_answers: {
+  1 => ->(answer) { answer.transform_keys(aisle: :shelf) }
+}
+```
+
+A call naming an older major answers with the method's answer passed through each earlier
+answer the method declares for the majors from the newest down to the one named, newest
+first. A call naming the newest major answers with the method's own answer.
+
+Every answer at a listed major, including a hub listing and a hub's refusal, carries an
+`Api-Version` header giving the full version it was answered at. Every answer, including
+the refusal below, carries a `Vary: Accept-Version` header.
+
+A call naming a major the host does not list is answered with status 406 and no
+`Api-Version` header. The controller raises `HubKernel::Api::UnservedMajorError` and
+renders its message:
+
+```json
+{ "error": "Major 7 is not served, the majors served are 1 and 2" }
+```
+
+A host that lists no majors ignores any `Accept-Version` header, answers every call with
+the method's own answer, and sends no version headers.
+
 ## Installation
 
 ```ruby

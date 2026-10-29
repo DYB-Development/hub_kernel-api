@@ -6,18 +6,25 @@ install:
   - HubKernel::Api.person_method=
   - HubKernel::Api.account_method=
   - HubKernel::Api.hubs=
+  - HubKernel::Api.versions=
+  - HubKernel::Api::MajorVersion
   - HubKernel::Api.check!
   - HubKernel::Api::UnservableHubError
+  - HubKernel::Api::UnservedMajorError
   - mount HubKernel::Api::Engine
 
 develop:
   - GET /<hub>
   - GET /<hub>/<method>
   - POST /<hub>/<method>
+  - Accept-Version
+  - Api-Version
+  - Vary
 
 sources:
   - lib/hub_kernel/api.rb
   - lib/hub_kernel/api/engine.rb
+  - lib/hub_kernel/api/major_version.rb
   - config/routes.rb
   - app/controllers/hub_kernel/api/hub_controller.rb
   - app/controllers/hub_kernel/api/hubs_controller.rb
