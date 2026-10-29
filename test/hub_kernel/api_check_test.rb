@@ -131,4 +131,10 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
 
     assert_nothing_raised { HubKernel::Api.check! }
   end
+
+  test "a listed version given as a number stops the app and is named as not in major.minor.patch form" do
+    HubKernel::Api.versions = [ HubKernel::Api::MajorVersion.new(version: "1.0.0"), HubKernel::Api::MajorVersion.new(version: 2.1) ]
+
+    assert_raises(HubKernel::Api::UnservableHubError, match: "The listed version 2.1 is not in major.minor.patch form") { HubKernel::Api.check! }
+  end
 end

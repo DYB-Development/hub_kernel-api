@@ -45,27 +45,29 @@ module HubKernel
     end
 
     def self.unlisted_earlier_answers
-      earlier_answers.reject { |_hub, _exposure, earlier| versions.map(&:major).include?(earlier.major) }.map do |hub, exposure, earlier|
+      earlier_answers.reject { |_hub, _exposure, earlier| formed_versions.map(&:major).include?(earlier.major) }.map do |hub, exposure, earlier|
         "#{hub.name} declares an earlier answer to #{exposure.name} for major #{earlier.major}, which the host does not list"
       end
     end
 
     def self.newest_earlier_answers
-      earlier_answers.select { |_hub, _exposure, earlier| earlier.major == versions.map(&:major).max }.map do |hub, exposure, earlier|
+      earlier_answers.select { |_hub, _exposure, earlier| earlier.major == formed_versions.map(&:major).max }.map do |hub, exposure, earlier|
         "#{hub.name} declares an earlier answer to #{exposure.name} for major #{earlier.major}, the newest major, which has no newer answer to translate from"
       end
     end
 
     def self.unformed_versions
-      versions.reject { |listed| listed.version.match?(/\A\d+\.\d+\.\d+\z/) }.map { |listed| "The listed version #{listed.version} is not in major.minor.patch form" }
+      (versions - formed_versions).map { |listed| "The listed version #{listed.version} is not in major.minor.patch form" }
     end
 
+    def self.formed_versions = versions.select { |listed| listed.version.to_s.match?(/\A\d+\.\d+\.\d+\z/) }
+
     def self.doubled_majors
-      versions.group_by(&:major).select { |_major, listed| listed.size > 1 }.keys.map { |major| "Major #{major} is listed more than once" }
+      formed_versions.group_by(&:major).select { |_major, listed| listed.size > 1 }.keys.map { |major| "Major #{major} is listed more than once" }
     end
 
     def self.undated(field, meaning)
-      versions.select { |listed| listed.deprecated? && listed.public_send(field).nil? }.map { |listed| "Major #{listed.major} is deprecated with no #{field}: date #{meaning}" }
+      formed_versions.select { |listed| listed.deprecated? && listed.public_send(field).nil? }.map { |listed| "Major #{listed.major} is deprecated with no #{field}: date #{meaning}" }
     end
 
     def self.all_retired
@@ -75,7 +77,7 @@ module HubKernel
     end
 
     def self.non_dates(field)
-      versions.reject { |listed| listed.public_send(field).nil? || listed.public_send(field).is_a?(Date) }.map do |listed|
+      formed_versions.reject { |listed| listed.public_send(field).nil? || listed.public_send(field).is_a?(Date) }.map do |listed|
         "Major #{listed.major} gives #{field}: as #{listed.public_send(field).inspect}, which is not a Date"
       end
     end
@@ -85,6 +87,6 @@ module HubKernel
     end
 
     def self.exposing_hubs = HubKernel::Interface.served.values.uniq.select { |hub| hub.respond_to?(:exposures) }
-    private_class_method :served_list_problems, :version_problems, :unlisted_earlier_answers, :newest_earlier_answers, :unformed_versions, :doubled_majors, :undated, :all_retired, :non_dates, :earlier_answers, :exposing_hubs
+    private_class_method :served_list_problems, :version_problems, :unlisted_earlier_answers, :newest_earlier_answers, :unformed_versions, :formed_versions, :doubled_majors, :undated, :all_retired, :non_dates, :earlier_answers, :exposing_hubs
   end
 end
