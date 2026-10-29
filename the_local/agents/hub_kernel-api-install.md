@@ -1,6 +1,6 @@
 ---
 name: hub_kernel-api-install
-description: Use to hook hub_kernel-api into a project — adding the gem, naming the base controller and its person and account methods, listing the served hubs and the majors served, running the startup check, and mounting the engine.
+description: Use to hook hub_kernel-api into a project — adding the gem, naming the base controller and its person and account methods, listing the served hubs, listing the majors served and marking the ones retired, running the startup check, and mounting the engine.
 tools: Bash, Read, Edit
 scope: hub JSON API — serving a hub_kernel hub's exposed methods as a JSON API in a host Rails app, each call behind the host's own sign-in and hub_kernel-interface's permission check and account scope
 ---
@@ -29,15 +29,19 @@ in when a Rails app needs its hubs callable over HTTP.
   one-pair Hash of address to hub module; defaults to empty.
 - `HubKernel::Api.versions=` — the Array of majors the API serves, each a
   `HubKernel::Api::MajorVersion`; defaults to empty, which turns versioning off.
-- `HubKernel::Api::MajorVersion` — one served major, built as
+- `HubKernel::Api::MajorVersion` — one listed major, built as
   `HubKernel::Api::MajorVersion.new(version: "1.4.0")`; its major is the first part of
-  the version.
+  the version, and `retired: true` marks a major the host keeps listed but no longer
+  serves.
 - `HubKernel::Api.check!` — checks the served hubs and raises if any cannot be served.
 - `HubKernel::Api::UnservableHubError` — the error `check!` raises, its message naming
   every problem on its own line.
 - `HubKernel::Api::UnservedMajorError` — the error the API raises when a call names a
   major the host does not list; the API answers that call with status 406 and the
   error's message, and the host does not rescue it.
+- `HubKernel::Api::RetiredMajorError` — the error the API raises when a call or a listing
+  names a retired major, whether or not the hub it names is served; the API answers that
+  call with status 410 and the error's message, and the host does not rescue it.
 - `mount HubKernel::Api::Engine` — the routes line that puts the API at a path in the host.
 
 ## How to use it
@@ -83,10 +87,17 @@ in when a Rails app needs its hubs callable over HTTP.
    - With no majors listed, every call gets the method's own answer, a call that names a
      major is answered as though it named none, and the API reports no version.
    - With majors listed, a call or listing that names no major is answered at the oldest
-     major listed, so listing majors on a host with existing clients changes the answers
-     and the answer shapes those clients receive unless the oldest major is the one they
-     were built against.
+     major listed that is not retired, so listing majors on a host with existing clients
+     changes the answers and the answer shapes those clients receive unless that major is
+     the one they were built against.
+   - A major marked `retired: true` stays listed, and every call or listing that names it
+     is answered with status 410.
+   - Keep at least one major not retired; with every listed major retired, a call that
+     names no major fails with a server error instead of an answer.
    - List one entry per major; two entries with the same major leave the second unused.
+
+   Ask which majors, if any, are retired. Do not mark one retired without the
+   developer's word, since every client still built against it stops getting answers.
 
 7. Create `config/initializers/hub_kernel_api.rb` with the answers from steps 3 to 6:
 
@@ -95,8 +106,9 @@ in when a Rails app needs its hubs callable over HTTP.
    HubKernel::Api.person_method = :current_person
    HubKernel::Api.account_method = :current_account
    HubKernel::Api.versions = [
-     HubKernel::Api::MajorVersion.new(version: "1.4.0"),
-     HubKernel::Api::MajorVersion.new(version: "2.0.1")
+     HubKernel::Api::MajorVersion.new(version: "1.4.0", retired: true),
+     HubKernel::Api::MajorVersion.new(version: "2.0.1"),
+     HubKernel::Api::MajorVersion.new(version: "3.1.0")
    ]
 
    Rails.application.config.to_prepare do
@@ -109,6 +121,7 @@ in when a Rails app needs its hubs callable over HTTP.
      the file, outside `to_prepare`. The base controller name is read once, when the
      API's controllers load, so it must be set before then.
    - Leave out the `versions` line when the developer chose to serve no majors.
+   - Add `retired: true` only to the majors the developer named as retired.
    - `hubs` and `check!` go inside `to_prepare`, so the hub constants resolve after each
      code reload and the check runs again after each one.
 
@@ -133,11 +146,17 @@ in when a Rails app needs its hubs callable over HTTP.
 - Run `bin/rails routes` after mounting and confirm the engine appears at the chosen path.
 - To serve another hub later, add it to the `hubs` list inside `to_prepare` and boot
   again so `check!` runs.
-- To serve a new major, add a `HubKernel::Api::MajorVersion` to `versions`. Removing a
-  major while others stay listed makes every call that names it answer with status 406.
-  Removing every major turns versioning off, and calls that name a major get the
+- To serve a new major, add a `HubKernel::Api::MajorVersion` to `versions`.
+- To stop serving a major, ask the developer whether to retire it or remove it. Adding
+  `retired: true` keeps it listed, and every call that names it answers with status 410
+  and a message naming the newest major. Removing it while others stay listed makes every
+  call that names it answer with status 406, the same as a major never listed.
+- Retiring or removing the oldest major that is not retired moves every call that names
+  no major to the next oldest one.
+- Removing every major turns versioning off, and calls that name a major get the
   method's own answer.
-- `check!` does not check `versions`; a mistake there shows only when a call is answered.
+- `check!` does not check `versions`; a mistake there, including every major being
+  retired, shows only when a call is answered.
 - An edit to the initializer takes effect only after the server restarts.
 - Keep `HubKernel::Api.check!` in the initializer; without it a hub that cannot be served
   is found only when a client calls it.
