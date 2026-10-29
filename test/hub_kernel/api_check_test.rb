@@ -106,4 +106,10 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
 
     assert_raises(HubKernel::Api::UnservableHubError, match: "HubKernel::ApiCheckTest::Bakery exposes no methods to serve\nHubKernel::ApiCheckTest::Larder declares an earlier answer to count_jars for major 7, which the host does not list") { HubKernel::Api.check! }
   end
+
+  test "a deprecated_on: date given as something other than a Date stops the app and is named" do
+    HubKernel::Api.versions = [ HubKernel::Api::MajorVersion.new(version: "1.0.0", deprecated: true, deprecated_on: "2026-09-30", sunset: Date.new(2027, 3, 31)), HubKernel::Api::MajorVersion.new(version: "2.1.0") ]
+
+    assert_raises(HubKernel::Api::UnservableHubError, match: 'Major 1 gives deprecated_on: as "2026-09-30", which is not a Date') { HubKernel::Api.check! }
+  end
 end

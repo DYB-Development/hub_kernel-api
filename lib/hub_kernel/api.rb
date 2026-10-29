@@ -1,3 +1,4 @@
+require "date"
 require "hub_kernel-interface"
 require "hub_kernel/api/version"
 require "hub_kernel/api/major_version"
@@ -25,7 +26,7 @@ module HubKernel
     def self.find(name) = HubKernel::Interface.find(name)
 
     def self.check!
-      problems = served_list_problems + unlisted_earlier_answers + newest_earlier_answers + unformed_versions + doubled_majors + unsunset_majors + all_retired
+      problems = served_list_problems + unlisted_earlier_answers + newest_earlier_answers + unformed_versions + doubled_majors + unsunset_majors + all_retired + non_dates(:deprecated_on)
       raise UnservableHubError, problems.join("\n") if problems.any?
     end
 
@@ -66,11 +67,17 @@ module HubKernel
       [ "Every listed major is retired, so a call with no Accept-Version has no major to be answered at" ]
     end
 
+    def self.non_dates(field)
+      versions.reject { |listed| listed.public_send(field).nil? || listed.public_send(field).is_a?(Date) }.map do |listed|
+        "Major #{listed.major} gives #{field}: as #{listed.public_send(field).inspect}, which is not a Date"
+      end
+    end
+
     def self.earlier_answers
       exposing_hubs.flat_map { |hub| hub.exposures.flat_map { |exposure| exposure.earlier_answers.map { |earlier| [ hub, exposure, earlier ] } } }
     end
 
     def self.exposing_hubs = HubKernel::Interface.served.values.uniq.select { |hub| hub.respond_to?(:exposures) }
-    private_class_method :served_list_problems, :unlisted_earlier_answers, :newest_earlier_answers, :unformed_versions, :doubled_majors, :unsunset_majors, :all_retired, :earlier_answers, :exposing_hubs
+    private_class_method :served_list_problems, :unlisted_earlier_answers, :newest_earlier_answers, :unformed_versions, :doubled_majors, :unsunset_majors, :all_retired, :non_dates, :earlier_answers, :exposing_hubs
   end
 end
