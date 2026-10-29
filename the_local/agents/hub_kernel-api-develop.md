@@ -64,7 +64,8 @@ answer shapes and mounting the engine belong to the install local.
   listing describes, present only when one is declared for that major.
 - `bin/rails hub_kernel_api:describe` — run in the host, writes one description file for
   each major the host lists that is not retired into the host's `api_descriptions` folder,
-  and writes none while any major removes or renames something its committed file holds.
+  and writes none while any major removes or renames something its committed file holds,
+  or adds something without its minor being raised.
 - `bin/rails hub_kernel_api:check_descriptions` — run in the host, usually in CI, fails
   when a major that is not retired and has a committed file removes or renames something
   that file holds, or adds something without its minor being raised above the file's.
@@ -215,9 +216,8 @@ Every path in an endpoint is relative to the path the host mounted the engine at
    Whether the host commits the files is the developer's decision: ask.
 
    The task refuses to write any file while a major removes or renames something its
-   committed file holds, and raises `HubKernel::Api::BreakingChangeError` naming each one,
-   as step 10 describes. It does not refuse an addition whose minor was not raised, so
-   raise the minor before running it, as step 10 says.
+   committed file holds, or adds something without its minor being raised, and raises
+   `HubKernel::Api::BreakingChangeError` naming each problem, as step 10 describes.
 
 10. To catch a breaking change before it ships, run the check in the host, and in the
     host's CI, against the committed description files:
@@ -238,7 +238,9 @@ Every path in an endpoint is relative to the path the host mounted the engine at
     Each problem names the major and a dotted path into its file: the hub's address, the
     method's name, then `takes`, `verb` or `answer_shape` and the keys and values below
     it. A changed value shows as the old value removed, so a method moved from GET to
-    POST shows as `verb.GET` removed, and a rename shows as the old name removed.
+    POST shows as `verb.GET` removed, and a rename shows as the old name removed. An
+    object in a list that has no `name` key, such as a choice in an `anyOf`, is named by
+    its position in the list, such as `answer_shape.anyOf.2`.
 
     - A removal or rename breaks clients pinned to that major. Whether to keep the old
       hub, method, value, verb or shape key at that major, or to make the change only in a
@@ -253,8 +255,8 @@ Every path in an endpoint is relative to the path the host mounted the engine at
     - A retired major, a major the host no longer lists, and a major with no committed
       file are not compared.
 
-    Run the check before running the describe task, since the describe task overwrites
-    the file the check compares against.
+    The describe task refuses to write while the check would fail, so fixing every
+    problem the check names comes before rewriting the files.
 
 11. To check answers in a client repo without reaching a running host, copy in the file
     for the major the client pins, and check a recorded `answer` against the method's
@@ -399,8 +401,7 @@ Every path in an endpoint is relative to the path the host mounted the engine at
 - A description file is written by the describe task only; never edit one by hand, and
   never use one to decide what a caller may call.
 - A breaking change is found by `bin/rails hub_kernel_api:check_descriptions` against the
-  committed files; never pass it by deleting or editing a committed file, and never run the
-  describe task to clear an addition before the major's minor is raised.
+  committed files; never pass it by deleting or editing a committed file.
 - The account a call is made for comes from the host's sign-in, never from a value in the
   request.
 - Only the methods a hub exposes are reachable; adding a method to the API means exposing

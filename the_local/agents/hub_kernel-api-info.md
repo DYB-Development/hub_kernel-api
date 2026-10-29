@@ -135,12 +135,14 @@ This local declares no commands. The surface is split between the other two loca
   major. Unlike a listing, it is written for no caller, so it holds every exposed method
   of every served hub with no permission check or account scope applied. Writing the
   files again with nothing changed writes identical files. Writing them is refused, with
-  nothing written, while any major removes or renames something its existing file holds.
+  nothing written, while any major removes or renames something its existing file holds,
+  or adds something without raising its minor.
 - **Breaking change check** — a check a host's CI runs that compares each major that is
   not retired with the description file it already has, and fails naming every problem
   at once. A major breaks its file when its current description no longer holds a hub, a
   method, a value the method takes, its verb, or a key or value in its answer shape that
-  the file holds, and a rename counts as the old name removed. It also breaks its file
+  the file holds, and a rename counts as the old name removed. An object in a list that
+  has no name, such as a choice in an `anyOf`, is matched by its position. It also breaks its file
   when it adds something the file does not hold while the minor of its full version is no
   higher than the minor in the file. A change that keeps every key and value but changes
   what a value means passes, and a retired major or a major with no file is not compared.

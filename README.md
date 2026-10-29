@@ -253,7 +253,8 @@ major that is not retired and already has a committed file breaks it in either o
 
 - Its current description no longer holds something the file holds: a hub, a method, a
   value the method takes, its verb, or a key or value in its answer shape. A rename shows
-  as the old name removed.
+  as the old name removed. An object in a list that has no `name` key, such as a choice
+  in an `anyOf`, is matched by its position in the list.
 - Its current description adds something the file does not hold, and the minor of its full
   version is not higher than the minor in the file.
 
@@ -266,8 +267,7 @@ A change that keeps every key and value but changes what a value means passes. A
 major's file is not compared, and a major with no committed file has nothing to compare.
 Once a major only adds and its minor is raised, the check passes and
 `bin/rails hub_kernel_api:describe` rewrites its file. The describe task refuses to write
-any file while a major removes or renames something its committed file holds, raising the
-same error naming each one.
+any file while the check would fail, raising the same error naming each problem.
 
 ## Testing an answer against its shape
 
