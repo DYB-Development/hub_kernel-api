@@ -7,7 +7,7 @@ module HubKernel
 
       private
 
-      def listed(exposure) = { name: exposure.name, takes: exposure.takes, verb: exposure.writes ? "POST" : "GET" }
+      def listed(exposure) = { name: exposure.name, takes: exposure.takes, verb: exposure.writes ? "POST" : "GET", answer_shape: exposure.answer_shape }.compact
     end
   end
 end
