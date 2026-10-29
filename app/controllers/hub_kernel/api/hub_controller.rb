@@ -5,6 +5,7 @@ module HubKernel
     class HubController < HubKernel::Api.base_controller.constantize
       rescue_from ActionController::RoutingError, HubKernel::NotAllowed, with: :not_found
       rescue_from HubKernel::Api::UnservedMajorError, with: :unserved_major
+      rescue_from HubKernel::Api::RetiredMajorError, with: :retired_major
 
       before_action :report_major, if: -> { HubKernel::Api.versions.any? }
 
@@ -16,7 +17,12 @@ module HubKernel
 
       def named_version = request.headers["Accept-Version"]
 
-      def named_major = HubKernel::Api.versions.find { |listed| listed.major.to_s == named_version } || raise(HubKernel::Api::UnservedMajorError, "Major #{named_version} is not served, the majors served are #{served_majors}")
+      def named_major
+        listed = HubKernel::Api.versions.find { |version| version.major.to_s == named_version } || raise(HubKernel::Api::UnservedMajorError, "Major #{named_version} is not served, the majors served are #{served_majors}")
+        raise HubKernel::Api::RetiredMajorError if listed.retired?
+
+        listed
+      end
 
       def served_majors = HubKernel::Api.versions.map(&:major).to_sentence(last_word_connector: " and ")
 
@@ -44,6 +50,8 @@ module HubKernel
       def not_found = render(json: { error: "Not found" }, status: :not_found)
 
       def unserved_major(refusal) = render(json: { error: refusal.message }, status: :not_acceptable)
+
+      def retired_major(refusal) = render(json: { error: refusal.message }, status: :gone)
     end
   end
 end
