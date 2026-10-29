@@ -5,6 +5,7 @@ require "hub_kernel/api/major_version"
 require "hub_kernel/api/earlier_answers"
 require "hub_kernel/api/description"
 require "hub_kernel/api/description_files"
+require "hub_kernel/api/description_check"
 require "hub_kernel/api/engine"
 
 module HubKernel
