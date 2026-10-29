@@ -36,4 +36,15 @@ class VersionDescriptionTest < ActionDispatch::IntegrationTest
 
     assert_equal "2.1.0", response.parsed_body["version"]
   end
+
+  test "the listing at the API's root address from a host that lists no majors gives no version" do
+    listed = HubKernel::Api.versions
+    HubKernel::Api.versions = []
+
+    get "/hubs", headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_equal [ "hubs" ], response.parsed_body.keys
+  ensure
+    HubKernel::Api.versions = listed
+  end
 end
