@@ -40,7 +40,7 @@ module HubKernel
 
       def report_deprecation
         response.headers["Deprecation"] = "true"
-        response.headers["Sunset"] = major.sunset.httpdate
+        response.headers["Sunset"] = major.sunset.httpdate if major.sunset
       end
 
       def listing_of(hub) = hub.exposures_for(person: caller_person, account: caller_account).map { |exposure| listed(exposure) }

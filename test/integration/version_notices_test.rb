@@ -38,6 +38,14 @@ class VersionNoticesTest < ActionDispatch::IntegrationTest
     assert_equal "Wed, 31 Mar 2027 00:00:00 GMT", response.headers["Sunset"]
   end
 
+  test "an answer at a deprecated major given no end date carries no Sunset header" do
+    HubKernel::Api.versions = [ HubKernel::Api::MajorVersion.new(version: "2.1.0", deprecated: true), HubKernel::Api::MajorVersion.new(version: "3.0.2") ]
+
+    get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "2" }, as: :json
+
+    assert_nil response.headers["Sunset"]
+  end
+
   test "a call at a deprecated major is answered end to end with its answer, its version and every notice header" do
     get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "2" }, as: :json
 
