@@ -18,7 +18,7 @@ module HubKernel
       def asked_with_the_right_verb? = hub.exposed(params[:name])&.writes == request.post?
 
       def at_major(answer)
-        return answer unless major
+        return answer if HubKernel::Api.versions.empty?
 
         earlier_answers_down_to_major.reduce(answer) { |translated, earlier| earlier.translate(translated) }
       end

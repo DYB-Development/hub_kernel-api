@@ -94,4 +94,15 @@ class VersionedCallsTest < ActionDispatch::IntegrationTest
 
     assert_equal [ 200, { "answer" => { "item" => "soap", "row" => 4 } }, "2.1.0", "Accept-Version" ], [ response.status, response.parsed_body, response.headers["Api-Version"], response.headers["Vary"] ]
   end
+
+  test "a host that lists no majors answers a call naming a major with the method's own answer" do
+    listed = HubKernel::Api.versions
+    HubKernel::Api.versions = []
+
+    get "/hubs/pantry/shelf_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "1" }, as: :json
+
+    assert_equal({ "answer" => { "item" => "soap", "aisle" => 4 } }, response.parsed_body)
+  ensure
+    HubKernel::Api.versions = listed
+  end
 end
