@@ -19,10 +19,12 @@ module HubKernel
 
       def named_major
         listed = HubKernel::Api.versions.find { |version| version.major.to_s == named_version } || raise(HubKernel::Api::UnservedMajorError, "Major #{named_version} is not served, the majors served are #{served_majors}")
-        raise HubKernel::Api::RetiredMajorError if listed.retired?
+        raise HubKernel::Api::RetiredMajorError, "Major #{named_version} is no longer served, the newest major is #{newest_major}" if listed.retired?
 
         listed
       end
+
+      def newest_major = HubKernel::Api.versions.max_by(&:major).major
 
       def served_majors = HubKernel::Api.versions.map(&:major).to_sentence(last_word_connector: " and ")
 

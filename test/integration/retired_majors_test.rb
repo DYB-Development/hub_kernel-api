@@ -13,4 +13,10 @@ class RetiredMajorsTest < ActionDispatch::IntegrationTest
 
     assert_response :gone
   end
+
+  test "a call naming a retired major is answered with an error saying that major is no longer served and naming the newest major" do
+    get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "1" }, as: :json
+
+    assert_equal({ "error" => "Major 1 is no longer served, the newest major is 3" }, response.parsed_body)
+  end
 end
