@@ -27,6 +27,8 @@ develop:
   - Vary
   - answer_shape
   - bin/rails hub_kernel_api:describe
+  - bin/rails hub_kernel_api:check_descriptions
+  - HubKernel::Api::BreakingChangeError
   - api_descriptions/v<major>.json
   - HubKernel::Api::TestHelper
   - assert_answer_shape
@@ -37,6 +39,7 @@ sources:
   - lib/hub_kernel/api/major_version.rb
   - lib/hub_kernel/api/description.rb
   - lib/hub_kernel/api/description_files.rb
+  - lib/hub_kernel/api/description_check.rb
   - lib/hub_kernel/api/earlier_answers.rb
   - lib/hub_kernel/api/test_helper.rb
   - lib/tasks/hub_kernel_api.rake
