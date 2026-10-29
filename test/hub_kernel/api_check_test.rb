@@ -151,4 +151,10 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
 
     assert_raises(HubKernel::Api::UnservableHubError, match: "HubKernel::ApiCheckTest::Spicerack declares an earlier answer to count_spices for major 2, the newest major") { HubKernel::Api.check! }
   end
+
+  test "a deprecated major written as a number with no dates is named as not in major.minor.patch form" do
+    HubKernel::Api.versions = [ HubKernel::Api::MajorVersion.new(version: 1, deprecated: true), HubKernel::Api::MajorVersion.new(version: "2.1.0") ]
+
+    assert_raises(HubKernel::Api::UnservableHubError, match: "The listed version 1 is not in major.minor.patch form") { HubKernel::Api.check! }
+  end
 end
