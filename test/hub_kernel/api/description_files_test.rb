@@ -52,4 +52,16 @@ class HubKernel::Api::DescriptionFilesTest < ActiveSupport::TestCase
       assert_equal JSON.pretty_generate(description), File.read(File.join(directory, "v2.json"))
     end
   end
+
+  test "the refused description files name each removal" do
+    Dir.mktmpdir do |directory|
+      description = JSON.parse(HubKernel::Api::Description.at(HubKernel::Api.versions.second).to_json)
+      description["hubs"]["shop"] << { "name" => "discount_of", "takes" => [ "item" ], "verb" => "GET" }
+      description["hubs"]["shop"].first["takes"] << "size"
+      File.write(File.join(directory, "v2.json"), JSON.pretty_generate(description))
+
+      error = assert_raises(HubKernel::Api::BreakingChangeError) { HubKernel::Api::DescriptionFiles.write(directory) }
+      assert_equal "Major 2 removes or renames shop.price_of.takes.size, which its committed file holds\nMajor 2 removes or renames shop.discount_of, which its committed file holds", error.message
+    end
+  end
 end
