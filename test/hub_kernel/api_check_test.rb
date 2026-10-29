@@ -94,4 +94,10 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
 
     assert_raises(HubKernel::Api::UnservableHubError, match: "Major 1 is deprecated with no sunset: date it stops being served") { HubKernel::Api.check! }
   end
+
+  test "a version list in which every major is retired stops the app and is named" do
+    HubKernel::Api.versions = [ HubKernel::Api::MajorVersion.new(version: "1.0.0", retired: true), HubKernel::Api::MajorVersion.new(version: "2.1.0", retired: true) ]
+
+    assert_raises(HubKernel::Api::UnservableHubError, match: "Every listed major is retired, so a call with no Accept-Version has no major to be answered at") { HubKernel::Api.check! }
+  end
 end

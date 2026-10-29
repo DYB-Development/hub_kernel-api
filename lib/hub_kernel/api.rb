@@ -26,7 +26,7 @@ module HubKernel
 
     def self.check!
       HubKernel::Interface.check!
-      problems = unlisted_earlier_answers + newest_earlier_answers + unformed_versions + doubled_majors + unsunset_majors
+      problems = unlisted_earlier_answers + newest_earlier_answers + unformed_versions + doubled_majors + unsunset_majors + all_retired
       raise UnservableHubError, problems.join("\n") if problems.any?
     end
 
@@ -54,11 +54,17 @@ module HubKernel
       versions.select { |listed| listed.deprecated? && listed.sunset.nil? }.map { |listed| "Major #{listed.major} is deprecated with no sunset: date it stops being served" }
     end
 
+    def self.all_retired
+      return [] unless versions.all?(&:retired?)
+
+      [ "Every listed major is retired, so a call with no Accept-Version has no major to be answered at" ]
+    end
+
     def self.earlier_answers
       exposing_hubs.flat_map { |hub| hub.exposures.flat_map { |exposure| exposure.earlier_answers.map { |earlier| [ hub, exposure, earlier ] } } }
     end
 
     def self.exposing_hubs = HubKernel::Interface.served.values.uniq.select { |hub| hub.respond_to?(:exposures) }
-    private_class_method :unlisted_earlier_answers, :newest_earlier_answers, :unformed_versions, :doubled_majors, :unsunset_majors, :earlier_answers, :exposing_hubs
+    private_class_method :unlisted_earlier_answers, :newest_earlier_answers, :unformed_versions, :doubled_majors, :unsunset_majors, :all_retired, :earlier_answers, :exposing_hubs
   end
 end
