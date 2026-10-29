@@ -49,4 +49,10 @@ class RetiredMajorsTest < ActionDispatch::IntegrationTest
 
     assert_equal "Accept-Version", response.headers["Vary"]
   end
+
+  test "a call naming an unlisted major is answered with an error naming only the majors still served" do
+    get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "7" }, as: :json
+
+    assert_equal({ "error" => "Major 7 is not served, the majors served are 2 and 3" }, response.parsed_body)
+  end
 end

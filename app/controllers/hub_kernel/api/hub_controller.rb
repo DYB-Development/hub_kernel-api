@@ -26,7 +26,7 @@ module HubKernel
 
       def newest_major = HubKernel::Api.versions.max_by(&:major).major
 
-      def served_majors = HubKernel::Api.versions.map(&:major).to_sentence(last_word_connector: " and ")
+      def served_majors = HubKernel::Api.versions.reject(&:retired?).map(&:major).to_sentence(last_word_connector: " and ")
 
       def report_major
         response.headers["Vary"] = "Accept-Version"
