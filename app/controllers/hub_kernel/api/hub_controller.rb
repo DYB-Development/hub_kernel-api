@@ -21,6 +21,7 @@ module HubKernel
       def served_majors = HubKernel::Api.versions.map(&:major).to_sentence(last_word_connector: " and ")
 
       def report_major
+        response.headers["Vary"] = "Accept-Version"
         response.headers["Api-Version"] = major.version
       end
 

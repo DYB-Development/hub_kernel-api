@@ -24,4 +24,10 @@ class VersionedCallsTest < ActionDispatch::IntegrationTest
 
     assert_equal({ "error" => "Major 7 is not served, the majors served are 1, 2 and 3" }, response.parsed_body)
   end
+
+  test "a call's answer names Accept-Version in Vary" do
+    get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "2" }, as: :json
+
+    assert_equal "Accept-Version", response.headers["Vary"]
+  end
 end
