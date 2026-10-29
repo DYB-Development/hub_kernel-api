@@ -1,6 +1,6 @@
 ---
 name: hub_kernel-api-info
-description: Use to learn what hub_kernel-api offers — serving a hub's exposed methods as a JSON API, the served hubs and their addresses, reads and writes, the listings at a hub's address and at the root address with each method's answer shape, the major versions a host serves, deprecates with the date it was deprecated and the date it stops, and retires, the headers telling a caller its major is not the newest or is deprecated, the description file written for each served major, the test assertion that checks an answer against its shape, and how sign-in, permission and account scope apply to each call.
+description: Use to learn what hub_kernel-api offers — serving a hub's exposed methods as a JSON API, the served hubs and their addresses, reads and writes, the listings at a hub's address and at the root address with each method's answer shape, the major versions a host serves, deprecates with the date it was deprecated and the date it stops, and retires, the headers telling a caller its major is not the newest or is deprecated, the description file written for each served major, the check that fails when a major removes something its file holds or adds something without raising its minor, the test assertion that checks an answer against its shape, and how sign-in, permission and account scope apply to each call.
 tools: Read
 scope: hub JSON API — serving a hub_kernel hub's exposed methods as a JSON API in a host Rails app, each call behind the host's own sign-in and hub_kernel-interface's permission check and account scope
 ---
@@ -29,7 +29,8 @@ changes. It can mark a major it plans to stop serving as deprecated, with the da
 was deprecated and the date it stops, so callers at that major are told on every
 answer, and can retire a major it no longer serves so callers naming it are told it is
 gone. It can write a JSON description of each served major into the app, so the API at
-each major can be read and compared without calling it. A host's tests can check that a
+each major can be read and compared without calling it, and its CI can fail a change that
+breaks a major's file. A host's tests can check that a
 method's answer still matches the shape it declares at a major, since a call never checks
 that itself.
 
@@ -48,7 +49,8 @@ This local declares no commands. The surface is split between the other two loca
   method, with their verbs, request values, the headers that name and report a
   version, the headers that report a newer major and a deprecated one, the answer
   shapes the listings give, responses and error statuses, the task that writes each
-  served major's description file and where those files go, and the test assertion
+  served major's description file and where those files go, the check that compares
+  each major with its file and the error it raises, and the test assertion
   that checks an answer against its shape.
 
 ## How to use it
@@ -59,7 +61,8 @@ This local declares no commands. The surface is split between the other two loca
 - To write a client against the API, to discover what it may call and the shape of
   each answer, to call it at a particular major, to notice that its major is
   deprecated or has a newer one, to work out why a call answered
-  as it did, to write and read the description files, or to test that a method's
+  as it did, to write and read the description files, to have CI fail a breaking
+  change to a major, or to test that a method's
   answer matches its shape, use the develop local.
 
 ## Conventions
@@ -131,7 +134,18 @@ This local declares no commands. The surface is split between the other two loca
   hub's methods, keyed by address, each with its values, verb and answer shape at that
   major. Unlike a listing, it is written for no caller, so it holds every exposed method
   of every served hub with no permission check or account scope applied. Writing the
-  files again with nothing changed writes identical files.
+  files again with nothing changed writes identical files. Writing them is refused, with
+  nothing written, while any major removes or renames something its existing file holds,
+  or adds something without raising its minor.
+- **Breaking change check** — a check a host's CI runs that compares each major that is
+  not retired with the description file it already has, and fails naming every problem
+  at once. A major breaks its file when its current description no longer holds a hub, a
+  method, a value the method takes, its verb, or a key or value in its answer shape that
+  the file holds, and a rename counts as the old name removed. An object in a list that
+  has no name, such as a choice in an `anyOf`, is matched by its position. It also breaks its file
+  when it adds something the file does not hold while the minor of its full version is no
+  higher than the minor in the file. A change that keeps every key and value but changes
+  what a value means passes, and a retired major or a major with no file is not compared.
 - **Shape assertion** — a test assertion a host includes in its own tests. It takes a
   hub, a method's name, the method's own answer and a listed major, turns the answer
   down to that major as a call would, and checks it against the method's shape at that

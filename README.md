@@ -240,6 +240,35 @@ major's file in and checks a recorded answer against a method's `answer_shape` w
 Schema library, without reaching a running host. The task writes no file for a retired
 major, and a host that lists no majors writes no files.
 
+### Checking for breaking changes
+
+A host's CI compares each major's current description with its committed file:
+
+```sh
+bin/rails hub_kernel_api:check_descriptions
+```
+
+The task raises `HubKernel::Api::BreakingChangeError`, naming every problem at once, when a
+major that is not retired and already has a committed file breaks it in either of two ways:
+
+- Its current description no longer holds something the file holds: a hub, a method, a
+  value the method takes, its verb, or a key or value in its answer shape. A rename shows
+  as the old name removed. An object in a list that has no `name` key, such as a choice
+  in an `anyOf`, is matched by its position in the list.
+- Its current description adds something the file does not hold, and the minor of its full
+  version is not higher than the minor in the file.
+
+```
+Major 2 removes or renames supplies.shelf_of.answer_shape.required.shelf, which its committed file holds
+Major 2 adds supplies.shelf_of.takes.size without raising its minor above 2.1.0
+```
+
+A change that keeps every key and value but changes what a value means passes. A retired
+major's file is not compared, and a major with no committed file has nothing to compare.
+Once a major only adds and its minor is raised, the check passes and
+`bin/rails hub_kernel_api:describe` rewrites its file. The describe task refuses to write
+any file while the check would fail, raising the same error naming each problem.
+
 ## Testing an answer against its shape
 
 A call never checks its answer against a declared shape, so a shape can stop describing what
