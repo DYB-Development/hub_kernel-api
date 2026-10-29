@@ -14,8 +14,24 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
     exposes :count_bottles, takes: [], writes: false
   end
 
-  setup { @served = HubKernel::Api.hubs }
-  teardown { HubKernel::Api.hubs = @served }
+  module Larder
+    extend HubKernel::Exposes
+
+    exposes :count_jars, takes: [], writes: false, earlier_answers: { 7 => ->(answer) { answer } }
+
+    def self.count_jars = 3
+  end
+
+  setup do
+    @served = HubKernel::Api.hubs
+    @listed = HubKernel::Api.versions
+    HubKernel::Api.versions = [ HubKernel::Api::MajorVersion.new(version: "1.0.0"), HubKernel::Api::MajorVersion.new(version: "2.1.0") ]
+  end
+
+  teardown do
+    HubKernel::Api.hubs = @served
+    HubKernel::Api.versions = @listed
+  end
 
   test "a served entry with no exposed list stops the app and is named" do
     HubKernel::Api.hubs = [ Bakery ]
@@ -39,5 +55,11 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
     HubKernel::Api.hubs = [ Shop, { "store" => Shop } ]
 
     assert_nothing_raised { HubKernel::Api.check! }
+  end
+
+  test "an earlier answer declared for a major the host does not list stops the app and is named" do
+    HubKernel::Api.hubs = [ Larder ]
+
+    assert_raises(HubKernel::Api::UnservableHubError, match: "HubKernel::ApiCheckTest::Larder declares an earlier answer to count_jars for major 7, which the host does not list") { HubKernel::Api.check! }
   end
 end

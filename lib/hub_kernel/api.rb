@@ -24,6 +24,23 @@ module HubKernel
 
     def self.find(name) = HubKernel::Interface.find(name)
 
-    def self.check! = HubKernel::Interface.check!
+    def self.check!
+      HubKernel::Interface.check!
+      problems = unlisted_earlier_answers
+      raise UnservableHubError, problems.join("\n") if problems.any?
+    end
+
+    def self.unlisted_earlier_answers
+      earlier_answers.reject { |_hub, _exposure, earlier| versions.map(&:major).include?(earlier.major) }.map do |hub, exposure, earlier|
+        "#{hub.name} declares an earlier answer to #{exposure.name} for major #{earlier.major}, which the host does not list"
+      end
+    end
+
+    def self.earlier_answers
+      exposing_hubs.flat_map { |hub| hub.exposures.flat_map { |exposure| exposure.earlier_answers.map { |earlier| [ hub, exposure, earlier ] } } }
+    end
+
+    def self.exposing_hubs = HubKernel::Interface.served.values.uniq.select { |hub| hub.respond_to?(:exposures) }
+    private_class_method :unlisted_earlier_answers, :earlier_answers, :exposing_hubs
   end
 end
