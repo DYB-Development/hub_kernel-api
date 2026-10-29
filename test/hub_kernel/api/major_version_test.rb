@@ -4,4 +4,8 @@ class HubKernel::Api::MajorVersionTest < ActiveSupport::TestCase
   test "a major is numbered by the first part of its full version" do
     assert_equal 2, HubKernel::Api::MajorVersion.new(version: "2.4.1").major
   end
+
+  test "a host can mark a listed major retired" do
+    assert_predicate HubKernel::Api::MajorVersion.new(version: "1.0.0", retired: true), :retired?
+  end
 end
