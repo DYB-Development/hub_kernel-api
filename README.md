@@ -270,9 +270,8 @@ declares, as a call does, and checks it against the method's shape at that major
 listing gives it. A failing assertion names the method and the major, then each place the
 answer differs from the shape, one to a line. It also fails naming the major and the method
 when the host lists no such major, or when the method declares no shape at it. Used without
-json_schemer installed, it raises
-a `LoadError` naming the gem to add. hub_kernel-api loads json_schemer only when the assertion
-runs, so a host without it still loads the gem.
+json_schemer installed, it raises a `LoadError` naming the gem to add. hub_kernel-api loads
+json_schemer only when the assertion runs, so a host without it still loads the gem.
 
 ## Installation
 
