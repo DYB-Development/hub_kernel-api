@@ -64,4 +64,15 @@ class AnswerShapesTest < ActionDispatch::IntegrationTest
 
     assert_equal({ "name" => "bin_of", "takes" => [ "item" ], "verb" => "GET" }, response.parsed_body.find { |listed| listed["name"] == "bin_of" })
   end
+
+  test "a hub listing from a host that lists no majors shows each method's own answer shape" do
+    listed = HubKernel::Api.versions
+    HubKernel::Api.versions = []
+
+    get "/hubs/pantry", headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_equal({ "type" => "object", "required" => [ "aisle" ] }, response.parsed_body.first["answer_shape"])
+  ensure
+    HubKernel::Api.versions = listed
+  end
 end
