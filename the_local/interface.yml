@@ -22,11 +22,16 @@ develop:
   - Api-Version
   - Vary
   - answer_shape
+  - bin/rails hub_kernel_api:describe
+  - api_descriptions/v<major>.json
 
 sources:
   - lib/hub_kernel/api.rb
   - lib/hub_kernel/api/engine.rb
   - lib/hub_kernel/api/major_version.rb
+  - lib/hub_kernel/api/description.rb
+  - lib/hub_kernel/api/description_files.rb
+  - lib/tasks/hub_kernel_api.rake
   - config/routes.rb
   - app/controllers/hub_kernel/api/hub_controller.rb
   - app/controllers/hub_kernel/api/hubs_controller.rb

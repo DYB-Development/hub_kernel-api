@@ -145,5 +145,6 @@ in when a Rails app needs its hubs callable over HTTP.
   hub_kernel-interface.
 - Declaring a method's answers at earlier majors is out of scope here; it belongs to
   hub_kernel-interface.
-- Calling the API, naming a major on a call, its responses and its error statuses are out
-  of scope here; they belong to the develop local.
+- Calling the API, naming a major on a call, its responses, its error statuses and
+  writing each major's description file are out of scope here; they belong to the
+  develop local.
