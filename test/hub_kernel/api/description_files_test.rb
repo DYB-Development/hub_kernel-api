@@ -18,4 +18,14 @@ class HubKernel::Api::DescriptionFilesTest < ActiveSupport::TestCase
       assert_equal JSON.parse(HubKernel::Api::Description.at(HubKernel::Api.versions.second).to_json), JSON.parse(File.read(File.join(directory, "v2.json")))
     end
   end
+
+  test "writing the description files twice with no change to any hub writes identical files" do
+    Dir.mktmpdir do |directory|
+      HubKernel::Api::DescriptionFiles.write(directory)
+      first = File.read(File.join(directory, "v2.json"))
+      HubKernel::Api::DescriptionFiles.write(directory)
+
+      assert_equal first, File.read(File.join(directory, "v2.json"))
+    end
+  end
 end
