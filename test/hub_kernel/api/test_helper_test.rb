@@ -25,4 +25,10 @@ class HubKernel::Api::TestHelperTest < ActiveSupport::TestCase
   test "the assertion passes when a method's own answer translated down to an older major matches that major's shape" do
     assert_answer_shape(Pantry, :shelf_of, Pantry.shelf_of(item: "flour"), major: 1)
   end
+
+  test "a failing assertion names the method and the major" do
+    failure = assert_raises(Minitest::Assertion) { assert_answer_shape(Pantry, :shelf_of, { item: "flour" }, major: 3) }
+
+    assert_equal "The answer to shelf_of at major 3 does not match its shape", failure.message.lines.first.chomp
+  end
 end
