@@ -1,6 +1,6 @@
 ---
 name: hub_kernel-api-info
-description: Use to learn what hub_kernel-api offers — serving a hub's exposed methods as a JSON API, the served hubs and their addresses, reads and writes, the listings at a hub's address and at the root address with each method's answer shape, the major versions a host serves, and how sign-in, permission and account scope apply to each call.
+description: Use to learn what hub_kernel-api offers — serving a hub's exposed methods as a JSON API, the served hubs and their addresses, reads and writes, the listings at a hub's address and at the root address with each method's answer shape, the major versions a host serves, the description file written for each served major, and how sign-in, permission and account scope apply to each call.
 tools: Read
 scope: hub JSON API — serving a hub_kernel hub's exposed methods as a JSON API in a host Rails app, each call behind the host's own sign-in and hub_kernel-interface's permission check and account scope
 ---
@@ -25,7 +25,8 @@ and account scope, so the API never shows a caller more than the app itself woul
 A client can learn from the listings what it may call and what shape each answer
 takes. A host can also serve several major versions of the API at the same addresses,
 so an older client keeps getting the answers it was built for after a method's answer
-changes.
+changes, and can write a JSON description of each served major into the app, so the API
+at each major can be read and compared without calling it.
 
 ## Interface
 
@@ -38,15 +39,16 @@ This local declares no commands. The surface is split between the other two loca
 - **hub_kernel-api-develop** owns the HTTP endpoints a client calls: the listing at
   the root address, the listing at a hub's address, and the call to one exposed
   method, with their verbs, request values, the headers that name and report a
-  version, the answer shapes the listings give, responses and error statuses.
+  version, the answer shapes the listings give, responses and error statuses, and the
+  task that writes each served major's description file and where those files go.
 
 ## How to use it
 
 - To put the API into a Rails app, to serve another hub from one that has it, or to
   list the majors a host serves, use the install local.
 - To write a client against the API, to discover what it may call and the shape of
-  each answer, to call it at a particular major, or to work out why a call answered
-  as it did, use the develop local.
+  each answer, to call it at a particular major, to work out why a call answered
+  as it did, or to write and read the description files, use the develop local.
 
 ## Conventions
 
@@ -91,5 +93,11 @@ This local declares no commands. The surface is split between the other two loca
 - **Unserved major** — a call or listing naming a major the host does not list is
   answered as not acceptable, with a message naming the majors that are served.
 - **No majors listed** — a host that lists no majors does no versioning: every call
-  gets the method's own answer, every listing gives each method's own shape, and no
-  version is reported.
+  gets the method's own answer, every listing gives each method's own shape, no
+  version is reported, and no description file is written.
+- **Description file** — one JSON file per served major, written into the host app on
+  request and named after the major. It gives the major's full version and every served
+  hub's methods, keyed by address, each with its values, verb and answer shape at that
+  major. Unlike a listing, it is written for no caller, so it holds every exposed method
+  of every served hub with no permission check or account scope applied. Writing the
+  files again with nothing changed writes identical files.

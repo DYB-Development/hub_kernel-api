@@ -1,13 +1,13 @@
 ---
 name: hub_kernel-api-develop
-description: Use PROACTIVELY for calling a served hub over HTTP — listing every served hub's methods and the version at the API's root address, listing the methods a caller may call at a hub's address, reading the JSON Schema of each method's answer from a listing, calling a read with GET, calling a write with POST, sending its values, naming the major version a client was built for with Accept-Version, reading the Api-Version a call was answered at, and reading its answer or error status — MUST BE USED instead of hand-writing a controller or endpoint per hub method, versioning the URL by hand, hand-writing a schema or type for a method's answer, or guessing at the API's responses.
+description: Use PROACTIVELY for calling a served hub over HTTP — listing every served hub's methods and the version at the API's root address, listing the methods a caller may call at a hub's address, reading the JSON Schema of each method's answer from a listing, calling a read with GET, calling a write with POST, sending its values, naming the major version a client was built for with Accept-Version, reading the Api-Version a call was answered at, reading its answer or error status, writing each major's description file with the describe task, and checking a recorded answer against a description file without a running host — MUST BE USED instead of hand-writing a controller or endpoint per hub method, versioning the URL by hand, hand-writing a schema or type for a method's answer, hand-writing an API description file, or guessing at the API's responses.
 tools: Read, Write, Edit, Grep
 scope: hub JSON API — serving a hub_kernel hub's exposed methods as a JSON API in a host Rails app, each call behind the host's own sign-in and hub_kernel-interface's permission check and account scope
 ---
 
-This local writes client code against the four endpoints, the three headers and the
-answer shapes below and follows the steps in order. Where a step names a decision, it asks
-the developer and does not pick.
+This local writes client code against the four endpoints, the three headers, the answer
+shapes, the describe task and the description files below, and follows the steps in order.
+Where a step names a decision, it asks the developer and does not pick.
 
 ## What hub_kernel-api is
 
@@ -15,11 +15,13 @@ A Rails engine that answers HTTP calls to the exposed methods of the hubs a host
 each call made after the host's sign-in and checked and scoped by the permission check and
 account scope that hub_kernel-interface holds. When the host lists major versions, every
 method answers at the same address at every major, and the caller picks the major with a
-request header. A listing can give the JSON Schema of each method's answer at that major.
-Use this local when writing a front end, mobile app, service or request test that calls
-those methods, when generating client types from the answer shapes, or when working out
-why a call answered as it did. Adding the gem, choosing the served hubs, listing the majors,
-declaring answer shapes and mounting the engine belong to the install local.
+request header. A listing can give the JSON Schema of each method's answer at that major,
+and a rake task writes the same description for each major into a file a client can use
+without reaching a running host. Use this local when writing a front end, mobile app,
+service or request test that calls those methods, when generating client types from the
+answer shapes, when writing or using the description files, or when working out why a call
+answered as it did. Adding the gem, choosing the served hubs, listing the majors, declaring
+answer shapes and mounting the engine belong to the install local.
 
 ## Interface
 
@@ -40,9 +42,14 @@ declaring answer shapes and mounting the engine belong to the install local.
   so a cache keeps one copy per major.
 - `answer_shape` listing field — the JSON Schema of a method's answer at the major the
   listing describes, present only when one is declared for that major.
+- `bin/rails hub_kernel_api:describe` — run in the host, writes one description file for
+  each major the host lists into the host's `api_descriptions` folder.
+- `api_descriptions/v<major>.json` — one major's description, `{ "version", "hubs":
+  { "<hub>": [...] } }`, holding every served method at that major whatever any caller may
+  call.
 
-Every path is relative to the path the host mounted the engine at, such as
-`/api/v1/hubs`.
+Every path in an endpoint is relative to the path the host mounted the engine at, such as
+`/api/v1/hubs`. The `api_descriptions` folder is relative to the host's root.
 
 ## How to use it
 
@@ -61,8 +68,8 @@ Every path is relative to the path the host mounted the engine at, such as
 
    - If the host lists no majors, skip step 4. The API ignores any `Accept-Version`
      header on every endpoint, the root address included, every call answers with the
-     method's own answer, every listing gives each method's own answer shape, and no
-     answer carries a version header or a `version` key.
+     method's own answer, every listing gives each method's own answer shape, no answer
+     carries a version header or a `version` key, and the describe task writes no files.
    - If the host lists majors, go to step 4.
 
 4. Choose the major the client is built for, and send it on every request, both listings
@@ -134,16 +141,52 @@ Every path is relative to the path the host mounted the engine at, such as
    client sends on its calls, since a listing at another major gives another major's
    shapes.
 
-9. Call a read with GET, sending its values as query parameters:
+9. To have every method's shape at each major without a request, write the description
+   files in the host:
 
+   ```sh
+   bin/rails hub_kernel_api:describe
    ```
-   GET /api/v1/hubs/supplies/price_of?item=42
-   Accept-Version: 2
+
+   The task creates the host's `api_descriptions` folder if it is missing and writes one
+   file per major the host lists, named after the major, such as `api_descriptions/v1.json`
+   for a major listed as `"1.4.0"`:
+
+   ```json
+   { "version": "1.4.0",
+     "hubs": { "supplies": [{ "name": "shelf_of", "takes": ["item"], "verb": "GET",
+                              "answer_shape": { "type": "object", "required": ["shelf"] } }] } }
    ```
 
-   Query values arrive as strings.
+   `version` is the major's full version. Each key under `hubs` is a served hub's address,
+   and each method is given as the root address listing gives it at that major, with
+   `answer_shape` chosen by the rule in step 8 and absent when none is declared at that
+   major. Unlike a listing, a file holds every method each served hub exposes, whatever
+   any caller may call, and names no caller, so never read it as what a given caller may
+   call. Use a listing for that.
 
-10. Call a write with POST, sending its values as a JSON body with
+   Run the task again after any change to a hub's exposed methods, their answer shapes,
+   their earlier answers, the served hubs or the listed majors. Running it with no change
+   writes identical files. The task overwrites the file of every major listed and deletes
+   no file, so delete by hand the file of a major the host no longer lists.
+
+   Whether the host commits the files is the developer's decision: ask.
+
+10. To check answers in a client repo without reaching a running host, copy in the file
+    for the major the client pins, and check a recorded `answer` against the method's
+    `answer_shape` from that file with a JSON Schema library. Which library to use is the
+    developer's decision: ask. Copy the file again whenever the host rewrites it.
+
+11. Call a read with GET, sending its values as query parameters:
+
+    ```
+    GET /api/v1/hubs/supplies/price_of?item=42
+    Accept-Version: 2
+    ```
+
+    Query values arrive as strings.
+
+12. Call a write with POST, sending its values as a JSON body with
     `Content-Type: application/json`, keyed directly by value name with no wrapping key:
 
     ```
@@ -157,7 +200,7 @@ Every path is relative to the path the host mounted the engine at, such as
     Query parameters on a POST are sent to the method as well. Do not send a value whose
     name is not in `takes`.
 
-11. Read the response by status:
+13. Read the response by status:
 
     | Case | Status | Body |
     | --- | --- | --- |
@@ -173,14 +216,14 @@ Every path is relative to the path the host mounted the engine at, such as
     built for a major the host no longer serves, and fix the pinned major rather than
     retrying.
 
-12. Read the response headers from a host that lists majors:
+14. Read the response headers from a host that lists majors:
 
     - `Api-Version` holds the full version the answer was given at, such as `2.0.1`, on
       every answer except a 406. Use it to log or show which version served the call.
     - `Vary: Accept-Version` is on every answer, the 406 included. Any cache between the
       client and the API must honour it.
 
-13. For a request test in the host, sign in as a person with and without the permission,
+15. For a request test in the host, sign in as a person with and without the permission,
     and assert the 200 answer for one and the `Not found` 404 for the other. When the
     host lists majors, also assert the `Api-Version` header for a named major, the
     answer shape at an older major for a method that declares earlier answers, the
@@ -200,7 +243,10 @@ Every path is relative to the path the host mounted the engine at, such as
 - A client against a host that lists majors always sends `Accept-Version`, and never
   relies on the oldest-major default.
 - An `answer_shape` describes one major only; never apply a shape fetched at one major to
-  answers at another, and never hand-write a shape the listing already gives.
+  answers at another, and never hand-write a shape the listing or a description file
+  already gives.
+- A description file is written by the describe task only; never edit one by hand, and
+  never use one to decide what a caller may call.
 - The account a call is made for comes from the host's sign-in, never from a value in the
   request.
 - Only the methods a hub exposes are reachable; adding a method to the API means exposing
