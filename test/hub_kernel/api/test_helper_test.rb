@@ -12,6 +12,10 @@ class HubKernel::Api::TestHelperTest < ActiveSupport::TestCase
     }
 
     def self.shelf_of(item:) = { item: item, aisle: 4 }
+
+    exposes :bin_of, takes: %i[item], writes: false, answer_shape: { "type" => "object", "properties" => { "aisle" => { "type" => "integer" }, "item" => { "type" => "string" } } }
+
+    def self.bin_of(item:) = { item: item, aisle: 4 }
   end
 
   test "the assertion fails when a method's answer does not match its shape at the major" do
@@ -30,5 +34,11 @@ class HubKernel::Api::TestHelperTest < ActiveSupport::TestCase
     failure = assert_raises(Minitest::Assertion) { assert_answer_shape(Pantry, :shelf_of, { item: "flour" }, major: 3) }
 
     assert_equal "The answer to shelf_of at major 3 does not match its shape", failure.message.lines.first.chomp
+  end
+
+  test "a failing assertion names each place the answer differs from the shape, one to a line" do
+    failure = assert_raises(Minitest::Assertion) { assert_answer_shape(Pantry, :bin_of, { item: 5, aisle: "four" }, major: 3) }
+
+    assert_match %r{\n.*/aisle.*\n.*/item}, failure.message
   end
 end
