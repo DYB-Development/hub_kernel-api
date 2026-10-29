@@ -41,4 +41,12 @@ class HubKernel::Api::TestHelperTest < ActiveSupport::TestCase
 
     assert_match %r{\n.*/aisle.*\n.*/item}, failure.message
   end
+
+  test "the assertion used without json_schemer installed fails naming the gem to add" do
+    define_singleton_method(:require) { |library| library == "json_schemer" ? raise(LoadError, "cannot load such file -- json_schemer") : super(library) }
+
+    failure = assert_raises(LoadError) { assert_answer_shape(Pantry, :shelf_of, Pantry.shelf_of(item: "flour"), major: 3) }
+
+    assert_equal 'assert_answer_shape needs the json_schemer gem, add gem "json_schemer" to the test group of your Gemfile', failure.message
+  end
 end
