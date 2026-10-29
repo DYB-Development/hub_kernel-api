@@ -33,4 +33,20 @@ class HubKernel::Api::DescriptionCheckTest < ActiveSupport::TestCase
       assert_equal [ "Major 2 removes or renames pantry.shelf_of.answer_shape.properties.shelf, which its committed file holds" ], HubKernel::Api::DescriptionCheck.removals(directory)
     end
   end
+
+  test "a retired major's committed file is not compared" do
+    listed = HubKernel::Api.versions
+    retired = HubKernel::Api::MajorVersion.new(version: "1.0.0", retired: true)
+    HubKernel::Api.versions = [ retired, HubKernel::Api::MajorVersion.new(version: "2.1.0") ]
+
+    Dir.mktmpdir do |directory|
+      description = committed(retired)
+      description["hubs"]["pantry"].first["answer_shape"]["properties"]["shelf"] = { "type" => "string" }
+      commit(directory, retired, description)
+
+      assert_empty HubKernel::Api::DescriptionCheck.removals(directory)
+    end
+  ensure
+    HubKernel::Api.versions = listed
+  end
 end

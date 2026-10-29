@@ -9,7 +9,7 @@ module HubKernel
         end
       end
 
-      def self.committed_majors(directory) = HubKernel::Api.versions.select { |major| File.exist?(file(directory, major)) }
+      def self.committed_majors(directory) = HubKernel::Api.versions.reject(&:retired?).select { |major| File.exist?(file(directory, major)) }
 
       def self.file(directory, major) = File.join(directory, "v#{major.major}.json")
 
