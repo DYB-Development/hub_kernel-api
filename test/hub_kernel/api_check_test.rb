@@ -144,4 +144,11 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
 
     assert_raises(HubKernel::Api::UnservableHubError, match: "HubKernel::ApiCheckTest::Larder declares an earlier answer to count_jars for major 7, which the host does not list") { HubKernel::Api.check! }
   end
+
+  test "an earlier answer for the newest major is named without stopping at a version given as a number" do
+    HubKernel::Api.hubs = [ Spicerack ]
+    HubKernel::Api.versions = [ HubKernel::Api::MajorVersion.new(version: "1.0.0"), HubKernel::Api::MajorVersion.new(version: "2.1.0"), HubKernel::Api::MajorVersion.new(version: 3) ]
+
+    assert_raises(HubKernel::Api::UnservableHubError, match: "HubKernel::ApiCheckTest::Spicerack declares an earlier answer to count_spices for major 2, the newest major") { HubKernel::Api.check! }
+  end
 end
