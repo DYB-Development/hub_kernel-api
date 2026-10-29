@@ -62,4 +62,17 @@ class HubKernel::Api::DescriptionCheckTest < ActiveSupport::TestCase
       assert_equal "Major 2 removes or renames pantry.shelf_of.answer_shape.properties.shelf, which its committed file holds", error.message
     end
   end
+
+  test "checking the committed files raises an error naming the major when it adds something without raising its minor" do
+    major = HubKernel::Api.versions.second
+
+    Dir.mktmpdir do |directory|
+      description = committed(major)
+      description["hubs"]["pantry"].first["takes"] = []
+      commit(directory, major, description)
+
+      error = assert_raises(HubKernel::Api::BreakingChangeError) { HubKernel::Api::DescriptionCheck.check!(directory) }
+      assert_equal "Major 2 adds pantry.shelf_of.takes.item without raising its minor above 2.1.0", error.message
+    end
+  end
 end
