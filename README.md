@@ -118,6 +118,42 @@ renders its message:
 A host that lists no majors ignores any `Accept-Version` header, answers every call with
 the method's own answer, and sends no version headers.
 
+## Answer shapes
+
+A method can declare the JSON Schema of its answer, and each earlier answer can declare
+the shape of the answer at its major, with `exposes` as hub_kernel-interface's readme
+describes:
+
+```ruby
+exposes :shelf_of, takes: %i[item], writes: false, answer_shape: { "type" => "object", "required" => [ "aisle" ] }, earlier_answers: {
+  1 => { translation: ->(answer) { answer.transform_keys(aisle: :shelf) }, answer_shape: { "type" => "object", "required" => [ "shelf" ] } }
+}
+```
+
+A hub listing, `/<hub>`, gives each method's `answer_shape` at the major the caller names
+in `Accept-Version`, or at the oldest major listed when it names none:
+
+```json
+[{ "name": "shelf_of", "takes": ["item"], "verb": "GET", "answer_shape": { "type": "object", "required": ["shelf"] } }]
+```
+
+A method's shape at the newest major is its own `answer_shape`. Its shape at an older major
+is the shape of the earlier answer declared for that major, or else its shape at the major
+after it. A method with no declared shape at that major, including one whose earlier answer
+for it declares none, is listed with no `answer_shape` key. A host that lists no majors
+lists each method's own shape.
+
+A GET at the API's root address, `/`, lists every served hub's methods the caller may call,
+keyed by the hub's address, each as a hub listing gives it, together with the full version
+of the major it describes:
+
+```json
+{ "version": "1.4.0", "hubs": { "supplies": [{ "name": "shelf_of", "takes": ["item"], "verb": "GET", "answer_shape": { "type": "object", "required": ["shelf"] } }] } }
+```
+
+A host that lists no majors gives no `version` key. The root address listing refuses a
+major the host does not list with status 406, as a call does.
+
 ## Installation
 
 ```ruby

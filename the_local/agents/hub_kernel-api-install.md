@@ -80,11 +80,12 @@ in when a Rails app needs its hubs callable over HTTP.
 
 6. Ask the developer whether the API serves major versions, and if it does, the full
    version of each major, in major.minor.patch form. Put these facts to them:
-   - With no majors listed, every call gets the method's own answer and the API reports
-     no version.
-   - With majors listed, a call that names no major is answered at the oldest major
-     listed, so listing majors on a host with existing clients changes what those
-     clients receive unless the oldest major is the one they were built against.
+   - With no majors listed, every call gets the method's own answer, a call that names a
+     major is answered as though it named none, and the API reports no version.
+   - With majors listed, a call or listing that names no major is answered at the oldest
+     major listed, so listing majors on a host with existing clients changes the answers
+     and the answer shapes those clients receive unless the oldest major is the one they
+     were built against.
    - List one entry per major; two entries with the same major leave the second unused.
 
 7. Create `config/initializers/hub_kernel_api.rb` with the answers from steps 3 to 6:
@@ -133,7 +134,9 @@ in when a Rails app needs its hubs callable over HTTP.
 - To serve another hub later, add it to the `hubs` list inside `to_prepare` and boot
   again so `check!` runs.
 - To serve a new major, add a `HubKernel::Api::MajorVersion` to `versions`. Removing a
-  major makes every call that names it answer with status 406.
+  major while others stay listed makes every call that names it answer with status 406.
+  Removing every major turns versioning off, and calls that name a major get the
+  method's own answer.
 - `check!` does not check `versions`; a mistake there shows only when a call is answered.
 - An edit to the initializer takes effect only after the server restarts.
 - Keep `HubKernel::Api.check!` in the initializer; without it a hub that cannot be served

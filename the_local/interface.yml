@@ -14,12 +14,14 @@ install:
   - mount HubKernel::Api::Engine
 
 develop:
+  - GET /
   - GET /<hub>
   - GET /<hub>/<method>
   - POST /<hub>/<method>
   - Accept-Version
   - Api-Version
   - Vary
+  - answer_shape
 
 sources:
   - lib/hub_kernel/api.rb
@@ -29,4 +31,5 @@ sources:
   - app/controllers/hub_kernel/api/hub_controller.rb
   - app/controllers/hub_kernel/api/hubs_controller.rb
   - app/controllers/hub_kernel/api/hub_calls_controller.rb
+  - app/controllers/hub_kernel/api/versions_controller.rb
   - README.md
