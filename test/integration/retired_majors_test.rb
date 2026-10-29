@@ -19,4 +19,10 @@ class RetiredMajorsTest < ActionDispatch::IntegrationTest
 
     assert_equal({ "error" => "Major 1 is no longer served, the newest major is 3" }, response.parsed_body)
   end
+
+  test "a GET at a hub's address naming a retired major is answered with status 410 and the retired major's error" do
+    get "/hubs/shop", headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "1" }, as: :json
+
+    assert_equal [ 410, { "error" => "Major 1 is no longer served, the newest major is 3" } ], [ response.status, response.parsed_body ]
+  end
 end
