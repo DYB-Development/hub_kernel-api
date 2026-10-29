@@ -25,6 +25,18 @@ module HubKernel
         response.headers["Api-Version"] = major.version
       end
 
+      def listing_of(hub) = hub.exposures_for(person: caller_person, account: caller_account).map { |exposure| listed(exposure) }
+
+      def listed(exposure) = { name: exposure.name, takes: exposure.takes, verb: exposure.writes ? "POST" : "GET", answer_shape: answer_shape_at_major(exposure) }.compact
+
+      def answer_shape_at_major(exposure)
+        return exposure.answer_shape if HubKernel::Api.versions.empty?
+
+        (nearest_earlier_answer(exposure) || exposure).answer_shape
+      end
+
+      def nearest_earlier_answer(exposure) = exposure.earlier_answers.select { |earlier| earlier.major >= major.major }.min_by(&:major)
+
       def caller_person = send(HubKernel::Api.person_method || HubKernel::Interface.person_method)
 
       def caller_account = send(HubKernel::Api.account_method || HubKernel::Interface.account_method)
