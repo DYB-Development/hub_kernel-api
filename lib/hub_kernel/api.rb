@@ -31,6 +31,8 @@ module HubKernel
     end
 
     def self.version_problems
+      return [] if versions.empty?
+
       unlisted_earlier_answers + newest_earlier_answers + unformed_versions + doubled_majors + undated(:deprecated_on, "it was deprecated") + undated(:sunset, "it stops being served") +
         non_dates(:deprecated_on) + non_dates(:sunset) + all_retired
     end

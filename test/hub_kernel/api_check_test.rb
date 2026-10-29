@@ -124,4 +124,11 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
 
     assert_raises(HubKernel::Api::UnservableHubError, match: "Major 1 is deprecated with no deprecated_on: date it was deprecated") { HubKernel::Api.check! }
   end
+
+  test "a host that lists no majors starts even when a served hub declares earlier answers" do
+    HubKernel::Api.versions = []
+    HubKernel::Api.hubs = [ Larder ]
+
+    assert_nothing_raised { HubKernel::Api.check! }
+  end
 end
