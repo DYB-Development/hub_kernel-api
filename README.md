@@ -115,7 +115,7 @@ the refusal below, carries a `Vary: Accept-Version` header.
 
 A call naming a major the host does not list is answered with status 406 and no
 `Api-Version` header. The controller raises `HubKernel::Api::UnservedMajorError` and
-renders its message:
+renders its message, which names every listed major that is not retired:
 
 ```json
 { "error": "Major 7 is not served, the majors served are 1 and 2" }

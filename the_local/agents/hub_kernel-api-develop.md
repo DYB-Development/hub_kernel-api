@@ -66,7 +66,7 @@ Every path in an endpoint is relative to the path the host mounted the engine at
 3. Find the majors the host lists in its initializer, where each is listed by its full
    version, such as `"2.0.1"`, and its major is the first number. A major listed with
    `retired: true` is retired: it stays listed, but every call naming it is refused with a
-   410. The error of a 406 answer also names every major listed, retired ones included, and
+   410. The error of a 406 answer also names every major listed that is not retired, and
    the error of a 410 names the newest major listed.
 
    - If the host lists no majors, skip step 4. The API ignores any `Accept-Version`
