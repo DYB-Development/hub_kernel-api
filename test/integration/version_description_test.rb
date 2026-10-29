@@ -30,4 +30,10 @@ class VersionDescriptionTest < ActionDispatch::IntegrationTest
       "pantry" => [ { "name" => "shelf_of", "takes" => [ "item" ], "verb" => "GET", "answer_shape" => { "type" => "object", "required" => [ "row" ] } }, { "name" => "restock", "takes" => [ "item" ], "verb" => "POST" } ]
     }, response.parsed_body["hubs"])
   end
+
+  test "the listing at the API's root address gives the full version of the major it describes" do
+    get "/hubs", headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "2" }, as: :json
+
+    assert_equal "2.1.0", response.parsed_body["version"]
+  end
 end
