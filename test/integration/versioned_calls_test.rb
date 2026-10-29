@@ -82,4 +82,10 @@ class VersionedCallsTest < ActionDispatch::IntegrationTest
   ensure
     HubKernel::Api.versions = listed
   end
+
+  test "a hub listing answers with the full version of the major it was asked at in Api-Version" do
+    get "/hubs/shop", headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "3" }, as: :json
+
+    assert_equal "3.0.2", response.headers["Api-Version"]
+  end
 end
