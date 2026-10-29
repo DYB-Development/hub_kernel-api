@@ -25,4 +25,10 @@ class VersionNoticesTest < ActionDispatch::IntegrationTest
 
     assert_equal "true", response.headers["Deprecation"]
   end
+
+  test "an answer at an older major that is not deprecated carries no Deprecation header" do
+    get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "1" }, as: :json
+
+    assert_nil response.headers["Deprecation"]
+  end
 end
