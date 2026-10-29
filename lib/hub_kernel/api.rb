@@ -26,8 +26,13 @@ module HubKernel
     def self.find(name) = HubKernel::Interface.find(name)
 
     def self.check!
-      problems = served_list_problems + unlisted_earlier_answers + newest_earlier_answers + unformed_versions + doubled_majors + unsunset_majors + all_retired + non_dates(:deprecated_on) + non_dates(:sunset)
+      problems = served_list_problems + version_problems
       raise UnservableHubError, problems.join("\n") if problems.any?
+    end
+
+    def self.version_problems
+      unlisted_earlier_answers + newest_earlier_answers + unformed_versions + doubled_majors + undated(:deprecated_on, "it was deprecated") + undated(:sunset, "it stops being served") +
+        non_dates(:deprecated_on) + non_dates(:sunset) + all_retired
     end
 
     def self.served_list_problems
@@ -57,8 +62,8 @@ module HubKernel
       versions.group_by(&:major).select { |_major, listed| listed.size > 1 }.keys.map { |major| "Major #{major} is listed more than once" }
     end
 
-    def self.unsunset_majors
-      versions.select { |listed| listed.deprecated? && listed.sunset.nil? }.map { |listed| "Major #{listed.major} is deprecated with no sunset: date it stops being served" }
+    def self.undated(field, meaning)
+      versions.select { |listed| listed.deprecated? && listed.public_send(field).nil? }.map { |listed| "Major #{listed.major} is deprecated with no #{field}: date #{meaning}" }
     end
 
     def self.all_retired
@@ -78,6 +83,6 @@ module HubKernel
     end
 
     def self.exposing_hubs = HubKernel::Interface.served.values.uniq.select { |hub| hub.respond_to?(:exposures) }
-    private_class_method :served_list_problems, :unlisted_earlier_answers, :newest_earlier_answers, :unformed_versions, :doubled_majors, :unsunset_majors, :all_retired, :non_dates, :earlier_answers, :exposing_hubs
+    private_class_method :served_list_problems, :version_problems, :unlisted_earlier_answers, :newest_earlier_answers, :unformed_versions, :doubled_majors, :undated, :all_retired, :non_dates, :earlier_answers, :exposing_hubs
   end
 end
