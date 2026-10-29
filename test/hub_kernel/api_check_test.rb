@@ -76,4 +76,10 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
 
     assert_raises(HubKernel::Api::UnservableHubError, match: "HubKernel::ApiCheckTest::Spicerack declares an earlier answer to count_spices for major 2, the newest major, which has no newer answer to translate from") { HubKernel::Api.check! }
   end
+
+  test "a listed version not in major.minor.patch form stops the app and is named" do
+    HubKernel::Api.versions = [ HubKernel::Api::MajorVersion.new(version: "1.0.0"), HubKernel::Api::MajorVersion.new(version: "2.1") ]
+
+    assert_raises(HubKernel::Api::UnservableHubError, match: "The listed version 2.1 is not in major.minor.patch form") { HubKernel::Api.check! }
+  end
 end

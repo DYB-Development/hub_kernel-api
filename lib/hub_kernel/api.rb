@@ -26,7 +26,7 @@ module HubKernel
 
     def self.check!
       HubKernel::Interface.check!
-      problems = unlisted_earlier_answers + newest_earlier_answers
+      problems = unlisted_earlier_answers + newest_earlier_answers + unformed_versions
       raise UnservableHubError, problems.join("\n") if problems.any?
     end
 
@@ -42,11 +42,15 @@ module HubKernel
       end
     end
 
+    def self.unformed_versions
+      versions.reject { |listed| listed.version.match?(/\A\d+\.\d+\.\d+\z/) }.map { |listed| "The listed version #{listed.version} is not in major.minor.patch form" }
+    end
+
     def self.earlier_answers
       exposing_hubs.flat_map { |hub| hub.exposures.flat_map { |exposure| exposure.earlier_answers.map { |earlier| [ hub, exposure, earlier ] } } }
     end
 
     def self.exposing_hubs = HubKernel::Interface.served.values.uniq.select { |hub| hub.respond_to?(:exposures) }
-    private_class_method :unlisted_earlier_answers, :newest_earlier_answers, :earlier_answers, :exposing_hubs
+    private_class_method :unlisted_earlier_answers, :newest_earlier_answers, :unformed_versions, :earlier_answers, :exposing_hubs
   end
 end
