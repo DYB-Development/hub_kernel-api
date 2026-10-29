@@ -1,3 +1,4 @@
+require "date"
 require "active_support/core_ext/array/conversions"
 
 module HubKernel
@@ -34,7 +35,12 @@ module HubKernel
         response.headers["Vary"] = "Accept-Version"
         response.headers["Api-Version"] = major.version
         response.headers["Api-Newest-Version"] = newest.version unless major == newest
-        response.headers["Deprecation"] = "true" if major.deprecated?
+        report_deprecation if major.deprecated?
+      end
+
+      def report_deprecation
+        response.headers["Deprecation"] = "true"
+        response.headers["Sunset"] = major.sunset.httpdate
       end
 
       def listing_of(hub) = hub.exposures_for(person: caller_person, account: caller_account).map { |exposure| listed(exposure) }

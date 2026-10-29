@@ -31,4 +31,10 @@ class VersionNoticesTest < ActionDispatch::IntegrationTest
 
     assert_nil response.headers["Deprecation"]
   end
+
+  test "an answer at a deprecated major gives the date it stops being served in a Sunset header" do
+    get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "2" }, as: :json
+
+    assert_equal "Wed, 31 Mar 2027 00:00:00 GMT", response.headers["Sunset"]
+  end
 end
