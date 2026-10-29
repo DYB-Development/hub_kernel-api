@@ -24,13 +24,16 @@ module HubKernel
         listed
       end
 
-      def newest_major = HubKernel::Api.versions.max_by(&:major).major
+      def newest = HubKernel::Api.versions.max_by(&:major)
+
+      def newest_major = newest.major
 
       def served_majors = HubKernel::Api.versions.reject(&:retired?).map(&:major).to_sentence(last_word_connector: " and ")
 
       def report_major
         response.headers["Vary"] = "Accept-Version"
         response.headers["Api-Version"] = major.version
+        response.headers["Api-Newest-Version"] = newest.version
       end
 
       def listing_of(hub) = hub.exposures_for(person: caller_person, account: caller_account).map { |exposure| listed(exposure) }
