@@ -7,7 +7,9 @@ module HubKernel
 
       private
 
-      def listed(exposure) = { name: exposure.name, takes: exposure.takes, verb: exposure.writes ? "POST" : "GET", answer_shape: exposure.answer_shape }.compact
+      def listed(exposure) = { name: exposure.name, takes: exposure.takes, verb: exposure.writes ? "POST" : "GET", answer_shape: answer_shape_at_major(exposure) }.compact
+
+      def answer_shape_at_major(exposure) = exposure.earlier_answer(major.major)&.answer_shape || exposure.answer_shape
     end
   end
 end
