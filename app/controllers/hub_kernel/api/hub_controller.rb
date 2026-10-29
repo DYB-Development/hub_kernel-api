@@ -1,3 +1,4 @@
+require "date"
 require "active_support/core_ext/array/conversions"
 
 module HubKernel
@@ -24,13 +25,22 @@ module HubKernel
         listed
       end
 
-      def newest_major = HubKernel::Api.versions.max_by(&:major).major
+      def newest = HubKernel::Api.versions.max_by(&:major)
+
+      def newest_major = newest.major
 
       def served_majors = HubKernel::Api.versions.reject(&:retired?).map(&:major).to_sentence(last_word_connector: " and ")
 
       def report_major
         response.headers["Vary"] = "Accept-Version"
         response.headers["Api-Version"] = major.version
+        response.headers["Api-Newest-Version"] = newest.version unless major == newest
+        report_deprecation if major.deprecated?
+      end
+
+      def report_deprecation
+        response.headers["Deprecation"] = "@#{Time.utc(major.deprecated_on.year, major.deprecated_on.month, major.deprecated_on.day).to_i}" if major.deprecated_on
+        response.headers["Sunset"] = major.sunset.httpdate if major.sunset
       end
 
       def listing_of(hub) = hub.exposures_for(person: caller_person, account: caller_account).map { |exposure| listed(exposure) }

@@ -1,6 +1,6 @@
 ---
 name: hub_kernel-api-info
-description: Use to learn what hub_kernel-api offers — serving a hub's exposed methods as a JSON API, the served hubs and their addresses, reads and writes, the listings at a hub's address and at the root address with each method's answer shape, the major versions a host serves and retires, the description file written for each served major, and how sign-in, permission and account scope apply to each call.
+description: Use to learn what hub_kernel-api offers — serving a hub's exposed methods as a JSON API, the served hubs and their addresses, reads and writes, the listings at a hub's address and at the root address with each method's answer shape, the major versions a host serves, deprecates with the date it was deprecated and the date it stops, and retires, the headers telling a caller its major is not the newest or is deprecated, the description file written for each served major, and how sign-in, permission and account scope apply to each call.
 tools: Read
 scope: hub JSON API — serving a hub_kernel hub's exposed methods as a JSON API in a host Rails app, each call behind the host's own sign-in and hub_kernel-interface's permission check and account scope
 ---
@@ -25,9 +25,11 @@ and account scope, so the API never shows a caller more than the app itself woul
 A client can learn from the listings what it may call and what shape each answer
 takes. A host can also serve several major versions of the API at the same addresses,
 so an older client keeps getting the answers it was built for after a method's answer
-changes, and can retire a major it no longer serves so callers naming it are told it is
-gone. It can write a JSON description of each served major into the app, so the API
-at each major can be read and compared without calling it.
+changes. It can mark a major it plans to stop serving as deprecated, with the date it
+was deprecated and the date it stops, so callers at that major are told on every
+answer, and can retire a major it no longer serves so callers naming it are told it is
+gone. It can write a JSON description of each served major into the app, so the API at
+each major can be read and compared without calling it.
 
 ## Interface
 
@@ -35,20 +37,23 @@ This local declares no commands. The surface is split between the other two loca
 
 - **hub_kernel-api-install** owns adding the gem to a host, the configuration that
   names the base controller, the person and account methods, the served hubs, the
-  majors served and which of them are retired, the startup check that rejects a hub that cannot be served, the
+  majors served, which of them are deprecated, when each was deprecated and when each
+  stops, and which are retired, the startup check that rejects a hub that cannot be served, the
   errors a host can meet, and mounting the engine.
 - **hub_kernel-api-develop** owns the HTTP endpoints a client calls: the listing at
   the root address, the listing at a hub's address, and the call to one exposed
   method, with their verbs, request values, the headers that name and report a
-  version, the answer shapes the listings give, responses and error statuses, and the
+  version, the headers that report a newer major and a deprecated one, the answer shapes the listings give, responses and error statuses, and the
   task that writes each served major's description file and where those files go.
 
 ## How to use it
 
 - To put the API into a Rails app, to serve another hub from one that has it, to
-  list the majors a host serves, or to retire one, use the install local.
+  list the majors a host serves, to deprecate one, or to retire one, use the install
+  local.
 - To write a client against the API, to discover what it may call and the shape of
-  each answer, to call it at a particular major, to work out why a call answered
+  each answer, to call it at a particular major, to notice that its major is
+  deprecated or has a newer one, to work out why a call answered
   as it did, or to write and read the description files, use the develop local.
 
 ## Conventions
@@ -91,6 +96,16 @@ This local declares no commands. The surface is split between the other two loca
   answer back into an older major's shape, and may declare that older shape too. A
   call at an older major gets the answer passed through each of those from the newest
   down to the major named.
+- **Newest major** — the listed major with the highest number. Every answer at an
+  older major carries a header giving the newest major's full version, so a caller
+  learns a newer major exists without asking.
+- **Deprecated major** — a major the host still serves but plans to stop serving,
+  optionally with the date it was deprecated and the date it stops. Every answer at it
+  is given as usual, and carries a header giving the date it was deprecated when that
+  date is given and a header giving the date it stops when that date is given. A
+  deprecated major given neither date carries neither header. The headers never change
+  an answer's body, and a deprecated major can still be the one a call that names no
+  major is answered at.
 - **Unserved major** — a call or listing naming a major the host does not list is
   answered as not acceptable, with a message naming the majors that are served.
 - **Retired major** — a major the host still lists but has marked as no longer served.
