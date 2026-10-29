@@ -34,4 +34,10 @@ class AnswerShapesTest < ActionDispatch::IntegrationTest
 
     assert_equal({ "name" => "label_of", "takes" => [ "item" ], "verb" => "GET" }, response.parsed_body.find { |listed| listed["name"] == "label_of" })
   end
+
+  test "a hub listing asked with no Accept-Version shows each method's answer shape at the oldest major served" do
+    get "/hubs/pantry", headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_equal({ "type" => "object", "required" => [ "shelf" ] }, response.parsed_body.first["answer_shape"])
+  end
 end
