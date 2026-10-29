@@ -47,4 +47,15 @@ class VersionDescriptionTest < ActionDispatch::IntegrationTest
   ensure
     HubKernel::Api.versions = listed
   end
+
+  test "a GET at the API's root address at an older major is answered end to end with only the methods the caller may call and its version headers" do
+    allowing = HubKernel::Authz.check
+    HubKernel::Authz.check = ->(_person, action, _account) { action == "pantry:shelf_of" }
+
+    get "/hubs", headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "1" }, as: :json
+
+    assert_equal [ 200, { "version" => "1.0.0", "hubs" => { "shop" => [], "pantry" => [ { "name" => "shelf_of", "takes" => [ "item" ], "verb" => "GET", "answer_shape" => { "type" => "object", "required" => [ "row" ] } } ] } }, "1.0.0", "Accept-Version" ], [ response.status, response.parsed_body, response.headers["Api-Version"], response.headers["Vary"] ]
+  ensure
+    HubKernel::Authz.check = allowing
+  end
 end
