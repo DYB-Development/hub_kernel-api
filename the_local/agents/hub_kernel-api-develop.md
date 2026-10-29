@@ -1,6 +1,6 @@
 ---
 name: hub_kernel-api-develop
-description: Use PROACTIVELY for calling a served hub over HTTP — listing every served hub's methods and the version at the API's root address, listing the methods a caller may call at a hub's address, reading the JSON Schema of each method's answer from a listing, calling a read with GET, calling a write with POST, sending its values, naming the major version a client was built for with Accept-Version, reading the Api-Version a call was answered at, noticing from Api-Newest-Version that a newer major is served, noticing from Deprecation and Sunset that the pinned major is deprecated and when it stops being served, reading its answer or error status, handling a call refused because it names a retired major, writing each major's description file with the describe task, and checking a recorded answer against a description file without a running host — MUST BE USED instead of hand-writing a controller or endpoint per hub method, versioning the URL by hand, hand-writing a schema or type for a method's answer, hand-writing an API description file, or guessing at the API's responses.
+description: Use PROACTIVELY for calling a served hub over HTTP — listing every served hub's methods and the version at the API's root address, listing the methods a caller may call at a hub's address, reading the JSON Schema of each method's answer from a listing, calling a read with GET, calling a write with POST, sending its values, naming the major version a client was built for with Accept-Version, reading the Api-Version a call was answered at, noticing from Api-Newest-Version that a newer major is served, noticing from Deprecation and Sunset that the pinned major is deprecated, when it was deprecated and when it stops being served, reading its answer or error status, handling a call refused because it names a retired major, writing each major's description file with the describe task, and checking a recorded answer against a description file without a running host — MUST BE USED instead of hand-writing a controller or endpoint per hub method, versioning the URL by hand, hand-writing a schema or type for a method's answer, hand-writing an API description file, or guessing at the API's responses.
 tools: Read, Write, Edit, Grep
 scope: hub JSON API — serving a hub_kernel hub's exposed methods as a JSON API in a host Rails app, each call behind the host's own sign-in and hub_kernel-interface's permission check and account scope
 ---
@@ -17,7 +17,8 @@ account scope that hub_kernel-interface holds. When the host lists major version
 method answers at the same address at every major, and the caller picks the major with a
 request header. A host can keep a major listed but mark it retired, and then every call
 naming it is refused as gone. A host can also mark a major it still serves deprecated, with
-the date it stops being served, and every answer at it then carries headers saying so. Every
+the date it was deprecated and the date it stops being served, and every answer at it then
+carries headers giving those dates. Every
 answer at a major older than the newest carries a header naming the newest. A listing can give the JSON Schema of each method's answer at that major,
 and a rake task writes the same description for each major into a file a client can use
 without reaching a running host. Use this local when writing a front end, mobile app,
@@ -44,11 +45,12 @@ answer shapes and mounting the engine belong to the install local.
   at, such as `1.4.0`, absent on a 406 or 410.
 - `Api-Newest-Version` response header — the full version of the newest major the host
   lists, such as `2.0.1`, sent only when the answer was given at an older major.
-- `Deprecation` response header — `true`, sent only when the answer was given at a major
-  the host marked deprecated.
+- `Deprecation` response header — the date the major was deprecated, as `@` and the Unix
+  seconds of that date's midnight UTC, such as `@1790726400`, sent only when the answer was
+  given at a major the host marked deprecated and gave a deprecation date.
 - `Sunset` response header — the date a deprecated major stops being served, as an HTTP
-  date such as `Wed, 31 Mar 2027 00:00:00 GMT`, sent only beside `Deprecation` and only
-  when the host gave that major a date.
+  date such as `Wed, 31 Mar 2027 00:00:00 GMT`, sent only when the answer was given at a
+  major the host marked deprecated and gave a sunset date.
 - `Vary` response header — `Accept-Version` on every answer from a host that lists majors,
   refusals included, so a cache keeps one copy per major.
 - `answer_shape` listing field — the JSON Schema of a method's answer at the major the
@@ -77,7 +79,8 @@ Every path in an endpoint is relative to the path the host mounted the engine at
    version, such as `"2.0.1"`, and its major is the first number. A major listed with
    `retired: true` is retired: it stays listed, but every call naming it is refused with a
    410. A major listed with `deprecated: true` is still served in full, and may carry a
-   `sunset:` date on which the host plans to stop serving it. The error of a 406 answer
+   `deprecated_on:` date on which it was deprecated and a `sunset:` date on which the host
+   plans to stop serving it. The error of a 406 answer
    also names every major listed that is not retired, and the error of a 410 names the
    newest major listed.
 
@@ -245,12 +248,18 @@ Every path in an endpoint is relative to the path the host mounted the engine at
     - `Api-Newest-Version` holds the full version of the newest major listed, such as
       `2.0.1`, on every answer given at an older major except a 406 or a 410. Its presence
       means a newer major is served than the one the client pins.
-    - `Deprecation: true` is on every answer given at a deprecated major except a 406 or a
-      410, and means the host plans to stop serving the pinned major.
+    - `Deprecation` holds the date the pinned major was deprecated, as `@` and the Unix
+      seconds of that date's midnight UTC, such as `@1790726400` for 30 September 2026, as
+      RFC 9745 defines it. It is on every answer given at a deprecated major except a 406
+      or a 410, and is absent when the host gave that major no deprecation date. Its
+      presence means the host plans to stop serving the pinned major.
     - `Sunset` holds the date the deprecated major stops being served, as an HTTP date such
-      as `Wed, 31 Mar 2027 00:00:00 GMT`. It is sent only with `Deprecation`, and is absent
-      when the host gave that major no date. After that date the host may retire the
-      major, and calls naming it are then refused with a 410.
+      as `Wed, 31 Mar 2027 00:00:00 GMT`. It is sent only at a deprecated major, and is
+      absent when the host gave that major no sunset date, whether or not `Deprecation` is
+      sent. After that date the host may retire the major, and calls naming it are then
+      refused with a 410.
+    - A deprecated major given neither date carries neither header, so a client cannot
+      tell it from a major that is not deprecated.
     - None of these headers changes the body of an answer. An answer at the newest major
       carries no `Api-Newest-Version`, and carries `Deprecation` and `Sunset` only when the
       newest major is itself deprecated.
@@ -268,7 +277,7 @@ Every path in an endpoint is relative to the path the host mounted the engine at
     answer shape at an older major for a method that declares earlier answers, the
     `answer_shape` a listing gives at that major, the root address listing's `version`,
     the `Api-Newest-Version` header at an older major and its absence at the newest, the
-    `Deprecation` and `Sunset` headers at a deprecated major, the 406 for a major the host
+    `Deprecation` and `Sunset` header values at a deprecated major given both dates, the 406 for a major the host
     does not list, and the 410 for a retired major.
 
 ## Conventions
