@@ -1,6 +1,7 @@
 require "hub_kernel-interface"
 require "hub_kernel/api/version"
 require "hub_kernel/api/major_version"
+require "hub_kernel/api/description"
 require "hub_kernel/api/engine"
 
 module HubKernel
