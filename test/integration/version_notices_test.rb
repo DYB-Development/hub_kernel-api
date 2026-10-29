@@ -37,4 +37,10 @@ class VersionNoticesTest < ActionDispatch::IntegrationTest
 
     assert_equal "Wed, 31 Mar 2027 00:00:00 GMT", response.headers["Sunset"]
   end
+
+  test "a call at a deprecated major is answered end to end with its answer, its version and every notice header" do
+    get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "2" }, as: :json
+
+    assert_equal [ 200, { "answer" => "soap costs 3" }, "2.1.0", "3.0.2", "true", "Wed, 31 Mar 2027 00:00:00 GMT" ], [ response.status, response.parsed_body, *response.headers.values_at("Api-Version", "Api-Newest-Version", "Deprecation", "Sunset") ]
+  end
 end
