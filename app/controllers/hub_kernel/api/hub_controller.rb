@@ -5,6 +5,7 @@ module HubKernel
     class HubController < HubKernel::Api.base_controller.constantize
       rescue_from ActionController::RoutingError, HubKernel::NotAllowed, with: :not_found
       rescue_from HubKernel::Api::UnservedMajorError, with: :unserved_major
+      rescue_from HubKernel::Api::RetiredMajorError, with: :retired_major
 
       before_action :report_major, if: -> { HubKernel::Api.versions.any? }
 
@@ -12,13 +13,20 @@ module HubKernel
 
       def hub = @hub ||= HubKernel::Api.find(params[:hub]) || raise(ActionController::RoutingError, "Not found")
 
-      def major = @major ||= named_version ? named_major : HubKernel::Api.versions.min_by(&:major)
+      def major = @major ||= named_version ? named_major : HubKernel::Api.versions.reject(&:retired?).min_by(&:major)
 
       def named_version = request.headers["Accept-Version"]
 
-      def named_major = HubKernel::Api.versions.find { |listed| listed.major.to_s == named_version } || raise(HubKernel::Api::UnservedMajorError, "Major #{named_version} is not served, the majors served are #{served_majors}")
+      def named_major
+        listed = HubKernel::Api.versions.find { |version| version.major.to_s == named_version } || raise(HubKernel::Api::UnservedMajorError, "Major #{named_version} is not served, the majors served are #{served_majors}")
+        raise HubKernel::Api::RetiredMajorError, "Major #{named_version} is no longer served, the newest major is #{newest_major}" if listed.retired?
 
-      def served_majors = HubKernel::Api.versions.map(&:major).to_sentence(last_word_connector: " and ")
+        listed
+      end
+
+      def newest_major = HubKernel::Api.versions.max_by(&:major).major
+
+      def served_majors = HubKernel::Api.versions.reject(&:retired?).map(&:major).to_sentence(last_word_connector: " and ")
 
       def report_major
         response.headers["Vary"] = "Accept-Version"
@@ -44,6 +52,8 @@ module HubKernel
       def not_found = render(json: { error: "Not found" }, status: :not_found)
 
       def unserved_major(refusal) = render(json: { error: refusal.message }, status: :not_acceptable)
+
+      def retired_major(refusal) = render(json: { error: refusal.message }, status: :gone)
     end
   end
 end

@@ -9,6 +9,7 @@ module HubKernel
   module Api
     UnservableHubError = HubKernel::Interface::UnservableHubError
     class UnservedMajorError < StandardError; end
+    class RetiredMajorError < StandardError; end
 
     mattr_accessor :base_controller, default: "ActionController::API"
     mattr_accessor :person_method

@@ -11,6 +11,7 @@ install:
   - HubKernel::Api.check!
   - HubKernel::Api::UnservableHubError
   - HubKernel::Api::UnservedMajorError
+  - HubKernel::Api::RetiredMajorError
   - mount HubKernel::Api::Engine
 
 develop:

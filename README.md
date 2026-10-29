@@ -85,9 +85,15 @@ HubKernel::Api.versions = [
 ]
 ```
 
+A host marks a major it no longer serves retired, and keeps it listed:
+
+```ruby
+HubKernel::Api::MajorVersion.new(version: "1.4.0", retired: true)
+```
+
 A method answers at the same address at every major. A caller names the major it was built
 for in an `Accept-Version` request header, such as `Accept-Version: 1`. A call that sends no
-`Accept-Version` header is answered at the oldest major listed.
+`Accept-Version` header is answered at the oldest major listed that is not retired.
 
 A hub method answers in the newest major's shape. A method whose answer changed in a newer
 major declares its earlier answers with `exposes`, as hub_kernel-interface's readme
@@ -109,10 +115,18 @@ the refusal below, carries a `Vary: Accept-Version` header.
 
 A call naming a major the host does not list is answered with status 406 and no
 `Api-Version` header. The controller raises `HubKernel::Api::UnservedMajorError` and
-renders its message:
+renders its message, which names every listed major that is not retired:
 
 ```json
 { "error": "Major 7 is not served, the majors served are 1 and 2" }
+```
+
+A call or a listing naming a retired major is answered with status 410 and no
+`Api-Version` header, whether or not the hub it names is served. The controller raises
+`HubKernel::Api::RetiredMajorError` and renders its message:
+
+```json
+{ "error": "Major 1 is no longer served, the newest major is 2" }
 ```
 
 A host that lists no majors ignores any `Accept-Version` header, answers every call with
@@ -131,7 +145,7 @@ exposes :shelf_of, takes: %i[item], writes: false, answer_shape: { "type" => "ob
 ```
 
 A hub listing, `/<hub>`, gives each method's `answer_shape` at the major the caller names
-in `Accept-Version`, or at the oldest major listed when it names none:
+in `Accept-Version`, or at the oldest major listed that is not retired when it names none:
 
 ```json
 [{ "name": "shelf_of", "takes": ["item"], "verb": "GET", "answer_shape": { "type": "object", "required": ["shelf"] } }]
@@ -152,11 +166,12 @@ of the major it describes:
 ```
 
 A host that lists no majors gives no `version` key. The root address listing refuses a
-major the host does not list with status 406, as a call does.
+major the host does not list with status 406 and a retired major with status 410, as a call
+does.
 
 ## Description files
 
-A host writes one JSON description file for each major it lists:
+A host writes one JSON description file for each major it lists that is not retired:
 
 ```sh
 bin/rails hub_kernel_api:describe
@@ -175,8 +190,8 @@ Unlike a listing, a file holds every served method, whatever any caller may call
 is written without a request, so it names no caller. Running the task again with no change
 to any hub writes identical files, so the host can commit them. A client repo copies a
 major's file in and checks a recorded answer against a method's `answer_shape` with a JSON
-Schema library, without reaching a running host. A host that lists no majors writes no
-files.
+Schema library, without reaching a running host. The task writes no file for a retired
+major, and a host that lists no majors writes no files.
 
 ## Installation
 

@@ -1,6 +1,6 @@
 ---
 name: hub_kernel-api-develop
-description: Use PROACTIVELY for calling a served hub over HTTP — listing every served hub's methods and the version at the API's root address, listing the methods a caller may call at a hub's address, reading the JSON Schema of each method's answer from a listing, calling a read with GET, calling a write with POST, sending its values, naming the major version a client was built for with Accept-Version, reading the Api-Version a call was answered at, reading its answer or error status, writing each major's description file with the describe task, and checking a recorded answer against a description file without a running host — MUST BE USED instead of hand-writing a controller or endpoint per hub method, versioning the URL by hand, hand-writing a schema or type for a method's answer, hand-writing an API description file, or guessing at the API's responses.
+description: Use PROACTIVELY for calling a served hub over HTTP — listing every served hub's methods and the version at the API's root address, listing the methods a caller may call at a hub's address, reading the JSON Schema of each method's answer from a listing, calling a read with GET, calling a write with POST, sending its values, naming the major version a client was built for with Accept-Version, reading the Api-Version a call was answered at, reading its answer or error status, handling a call refused because it names a retired major, writing each major's description file with the describe task, and checking a recorded answer against a description file without a running host — MUST BE USED instead of hand-writing a controller or endpoint per hub method, versioning the URL by hand, hand-writing a schema or type for a method's answer, hand-writing an API description file, or guessing at the API's responses.
 tools: Read, Write, Edit, Grep
 scope: hub JSON API — serving a hub_kernel hub's exposed methods as a JSON API in a host Rails app, each call behind the host's own sign-in and hub_kernel-interface's permission check and account scope
 ---
@@ -15,12 +15,13 @@ A Rails engine that answers HTTP calls to the exposed methods of the hubs a host
 each call made after the host's sign-in and checked and scoped by the permission check and
 account scope that hub_kernel-interface holds. When the host lists major versions, every
 method answers at the same address at every major, and the caller picks the major with a
-request header. A listing can give the JSON Schema of each method's answer at that major,
+request header. A host can keep a major listed but mark it retired, and then every call
+naming it is refused as gone. A listing can give the JSON Schema of each method's answer at that major,
 and a rake task writes the same description for each major into a file a client can use
 without reaching a running host. Use this local when writing a front end, mobile app,
 service or request test that calls those methods, when generating client types from the
 answer shapes, when writing or using the description files, or when working out why a call
-answered as it did. Adding the gem, choosing the served hubs, listing the majors, declaring
+answered as it did. Adding the gem, choosing the served hubs, listing the majors, retiring a major, declaring
 answer shapes and mounting the engine belong to the install local.
 
 ## Interface
@@ -37,14 +38,14 @@ answer shapes and mounting the engine belong to the install local.
 - `Accept-Version` request header — names the major version the client was built for, as
   the bare major number, such as `Accept-Version: 1`.
 - `Api-Version` response header — the full major.minor.patch version the call was answered
-  at, such as `1.4.0`.
+  at, such as `1.4.0`, absent on a 406 or 410.
 - `Vary` response header — `Accept-Version` on every answer from a host that lists majors,
-  so a cache keeps one copy per major.
+  refusals included, so a cache keeps one copy per major.
 - `answer_shape` listing field — the JSON Schema of a method's answer at the major the
   listing describes, present only when one is declared for that major.
 - `bin/rails hub_kernel_api:describe` — run in the host, writes one description file for
-  each major the host lists into the host's `api_descriptions` folder.
-- `api_descriptions/v<major>.json` — one major's description, `{ "version", "hubs":
+  each major the host lists that is not retired into the host's `api_descriptions` folder.
+- `api_descriptions/v<major>.json` — one major's description, written for no retired major, `{ "version", "hubs":
   { "<hub>": [...] } }`, holding every served method at that major whatever any caller may
   call.
 
@@ -62,9 +63,11 @@ Every path in an endpoint is relative to the path the host mounted the engine at
    host's served hubs list in its initializer to find it, or read the keys of the root
    address listing in step 6.
 
-3. Find the majors the host serves in its initializer, where each is listed by its full
-   version, such as `"2.0.1"`, and its major is the first number. The error of a 406 answer
-   also names every major served.
+3. Find the majors the host lists in its initializer, where each is listed by its full
+   version, such as `"2.0.1"`, and its major is the first number. A major listed with
+   `retired: true` is retired: it stays listed, but every call naming it is refused with a
+   410. The error of a 406 answer also names every major listed that is not retired, and
+   the error of a 410 names the newest major listed.
 
    - If the host lists no majors, skip step 4. The API ignores any `Accept-Version`
      header on every endpoint, the root address included, every call answers with the
@@ -80,9 +83,11 @@ Every path in an endpoint is relative to the path the host mounted the engine at
    ```
 
    Which major to pin is the developer's decision: ask. A new client normally pins the
-   newest major listed. A request with no `Accept-Version` header is answered at the
-   oldest major listed, so a client that omits it silently gets the oldest answer shape.
-   Send the major alone, never the full version: `2`, not `2.0.1`.
+   newest major listed. Never pin a retired major, since every request naming it is
+   refused with a 410. A request with no `Accept-Version` header is answered at the oldest
+   major listed that is not retired, so a client that omits it silently gets that major's
+   answer shape, and moves to a newer one when the host retires it. Send the major alone,
+   never the full version: `2`, not `2.0.1`.
 
    At an older major, a method answers in the shape it had at that major. A method whose
    answer changed declares its earlier answers on the hub, and the API converts the
@@ -149,7 +154,7 @@ Every path in an endpoint is relative to the path the host mounted the engine at
    ```
 
    The task creates the host's `api_descriptions` folder if it is missing and writes one
-   file per major the host lists, named after the major, such as `api_descriptions/v1.json`
+   file per major the host lists that is not retired, named after the major, such as `api_descriptions/v1.json`
    for a major listed as `"1.4.0"`:
 
    ```json
@@ -167,8 +172,9 @@ Every path in an endpoint is relative to the path the host mounted the engine at
 
    Run the task again after any change to a hub's exposed methods, their answer shapes,
    their earlier answers, the served hubs or the listed majors. Running it with no change
-   writes identical files. The task overwrites the file of every major listed and deletes
-   no file, so delete by hand the file of a major the host no longer lists.
+   writes identical files. The task overwrites the file of every major listed that is not
+   retired and deletes no file, so delete by hand the file of a major the host has retired
+   or no longer lists.
 
    Whether the host commits the files is the developer's decision: ask.
 
@@ -210,17 +216,20 @@ Every path in an endpoint is relative to the path the host mounted the engine at
     | A permitted call sends a value the method does not take | 422 | `{"error": "<method> does not take <values>"}` |
     | A record the call names does not exist | 404 | `{"error": "No <record> has the id <id>"}` |
     | `Accept-Version` names a major the host does not list, on any endpoint | 406 | `{"error": "Major <n> is not served, the majors served are <majors>"}` |
+    | `Accept-Version` names a retired major, on any endpoint, whether or not the hub is served | 410 | `{"error": "Major <n> is no longer served, the newest major is <newest>"}` |
 
     Show the `error` text of a 422 to the user, since it is the hub's reason. Treat
     `Not found` as a method that does not exist for this caller. Treat a 406 as a client
-    built for a major the host no longer serves, and fix the pinned major rather than
-    retrying.
+    pinned to a major the host does not list, and a 410 as a client pinned to a major the
+    host has retired. Fix the pinned major for either rather than retrying, and ask the
+    developer which major to move the client to.
 
 14. Read the response headers from a host that lists majors:
 
     - `Api-Version` holds the full version the answer was given at, such as `2.0.1`, on
-      every answer except a 406. Use it to log or show which version served the call.
-    - `Vary: Accept-Version` is on every answer, the 406 included. Any cache between the
+      every answer except a 406 or a 410. Use it to log or show which version served the
+      call.
+    - `Vary: Accept-Version` is on every answer, the 406 and 410 included. Any cache between the
       client and the API must honour it.
 
 15. For a request test in the host, sign in as a person with and without the permission,
@@ -228,7 +237,7 @@ Every path in an endpoint is relative to the path the host mounted the engine at
     host lists majors, also assert the `Api-Version` header for a named major, the
     answer shape at an older major for a method that declares earlier answers, the
     `answer_shape` a listing gives at that major, the root address listing's `version`,
-    and the 406 for a major the host does not list.
+    the 406 for a major the host does not list, and the 410 for a retired major.
 
 ## Conventions
 
@@ -241,7 +250,7 @@ Every path in an endpoint is relative to the path the host mounted the engine at
 - The major is chosen by the `Accept-Version` header alone; never put a version in the
   path after the mount point or in a query parameter.
 - A client against a host that lists majors always sends `Accept-Version`, and never
-  relies on the oldest-major default.
+  relies on the default, and never sends a retired major.
 - An `answer_shape` describes one major only; never apply a shape fetched at one major to
   answers at another, and never hand-write a shape the listing or a description file
   already gives.
@@ -252,4 +261,4 @@ Every path in an endpoint is relative to the path the host mounted the engine at
 - Only the methods a hub exposes are reachable; adding a method to the API means exposing
   it on the hub, not adding a route.
 - Installing the gem, configuring it, choosing the served hubs, listing the majors,
-  declaring a method's earlier answers and declaring answer shapes are out of scope here.
+  retiring a major, declaring a method's earlier answers and declaring answer shapes are out of scope here.

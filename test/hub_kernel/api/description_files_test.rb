@@ -28,4 +28,17 @@ class HubKernel::Api::DescriptionFilesTest < ActiveSupport::TestCase
       assert_equal first, File.read(File.join(directory, "v2.json"))
     end
   end
+
+  test "writing the description files writes no file for a retired major" do
+    listed = HubKernel::Api.versions
+    HubKernel::Api.versions = [ HubKernel::Api::MajorVersion.new(version: "1.0.0", retired: true), HubKernel::Api::MajorVersion.new(version: "2.1.0") ]
+
+    Dir.mktmpdir do |directory|
+      HubKernel::Api::DescriptionFiles.write(directory)
+
+      assert_equal [ "v2.json" ], Dir.children(directory)
+    end
+  ensure
+    HubKernel::Api.versions = listed
+  end
 end
