@@ -60,4 +60,15 @@ class VersionedCallsTest < ActionDispatch::IntegrationTest
 
     assert_equal({ "answer" => { "item" => "soap", "aisle" => 4 } }, response.parsed_body)
   end
+
+  test "a host that lists no majors answers with no version headers" do
+    listed = HubKernel::Api.versions
+    HubKernel::Api.versions = []
+
+    get "/hubs/shop/price_of", params: { item: "soap" }, headers: { "X-Person" => "sam", "X-Account" => "acme" }, as: :json
+
+    assert_equal [ nil, "Accept" ], [ response.headers["Api-Version"], response.headers["Vary"] ]
+  ensure
+    HubKernel::Api.versions = listed
+  end
 end

@@ -6,7 +6,7 @@ module HubKernel
       rescue_from ActionController::RoutingError, HubKernel::NotAllowed, with: :not_found
       rescue_from HubKernel::Api::UnservedMajorError, with: :unserved_major
 
-      before_action :report_major
+      before_action :report_major, if: -> { HubKernel::Api.versions.any? }
 
       private
 
