@@ -13,7 +13,7 @@ module HubKernel
 
       def hub = @hub ||= HubKernel::Api.find(params[:hub]) || raise(ActionController::RoutingError, "Not found")
 
-      def major = @major ||= named_version ? named_major : HubKernel::Api.versions.min_by(&:major)
+      def major = @major ||= named_version ? named_major : HubKernel::Api.versions.reject(&:retired?).min_by(&:major)
 
       def named_version = request.headers["Accept-Version"]
 
