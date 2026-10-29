@@ -58,4 +58,15 @@ class VersionDescriptionTest < ActionDispatch::IntegrationTest
   ensure
     HubKernel::Authz.check = allowing
   end
+
+  test "the listing at the API's root address from a host that lists no majors ignores a major named in Accept-Version" do
+    listed = HubKernel::Api.versions
+    HubKernel::Api.versions = []
+
+    get "/hubs", headers: { "X-Person" => "sam", "X-Account" => "acme", "Accept-Version" => "1" }, as: :json
+
+    assert_response :ok
+  ensure
+    HubKernel::Api.versions = listed
+  end
 end
