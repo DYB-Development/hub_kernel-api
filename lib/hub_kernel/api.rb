@@ -26,7 +26,7 @@ module HubKernel
 
     def self.check!
       HubKernel::Interface.check!
-      problems = unlisted_earlier_answers
+      problems = unlisted_earlier_answers + newest_earlier_answers
       raise UnservableHubError, problems.join("\n") if problems.any?
     end
 
@@ -36,11 +36,17 @@ module HubKernel
       end
     end
 
+    def self.newest_earlier_answers
+      earlier_answers.select { |_hub, _exposure, earlier| earlier.major == versions.map(&:major).max }.map do |hub, exposure, earlier|
+        "#{hub.name} declares an earlier answer to #{exposure.name} for major #{earlier.major}, the newest major, which has no newer answer to translate from"
+      end
+    end
+
     def self.earlier_answers
       exposing_hubs.flat_map { |hub| hub.exposures.flat_map { |exposure| exposure.earlier_answers.map { |earlier| [ hub, exposure, earlier ] } } }
     end
 
     def self.exposing_hubs = HubKernel::Interface.served.values.uniq.select { |hub| hub.respond_to?(:exposures) }
-    private_class_method :unlisted_earlier_answers, :earlier_answers, :exposing_hubs
+    private_class_method :unlisted_earlier_answers, :newest_earlier_answers, :earlier_answers, :exposing_hubs
   end
 end

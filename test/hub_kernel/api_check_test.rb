@@ -22,6 +22,14 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
     def self.count_jars = 3
   end
 
+  module Spicerack
+    extend HubKernel::Exposes
+
+    exposes :count_spices, takes: [], writes: false, earlier_answers: { 2 => ->(answer) { answer } }
+
+    def self.count_spices = 9
+  end
+
   setup do
     @served = HubKernel::Api.hubs
     @listed = HubKernel::Api.versions
@@ -61,5 +69,11 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
     HubKernel::Api.hubs = [ Larder ]
 
     assert_raises(HubKernel::Api::UnservableHubError, match: "HubKernel::ApiCheckTest::Larder declares an earlier answer to count_jars for major 7, which the host does not list") { HubKernel::Api.check! }
+  end
+
+  test "an earlier answer declared for the newest major stops the app and is named" do
+    HubKernel::Api.hubs = [ Spicerack ]
+
+    assert_raises(HubKernel::Api::UnservableHubError, match: "HubKernel::ApiCheckTest::Spicerack declares an earlier answer to count_spices for major 2, the newest major, which has no newer answer to translate from") { HubKernel::Api.check! }
   end
 end
