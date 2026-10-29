@@ -75,4 +75,17 @@ class HubKernel::Api::DescriptionCheckTest < ActiveSupport::TestCase
       assert_equal "Major 2 adds pantry.shelf_of.takes.item without raising its minor above 2.1.0", error.message
     end
   end
+
+  test "checking the committed files passes when a major only adds things and raises its minor" do
+    major = HubKernel::Api.versions.second
+
+    Dir.mktmpdir do |directory|
+      description = committed(major)
+      description["version"] = "2.0.0"
+      description["hubs"]["pantry"].first["takes"] = []
+      commit(directory, major, description)
+
+      assert_nothing_raised { HubKernel::Api::DescriptionCheck.check!(directory) }
+    end
+  end
 end
