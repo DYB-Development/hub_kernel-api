@@ -114,27 +114,30 @@ Every answer at a listed major, including a hub listing and a hub's refusal, car
 the refusal below, carries a `Vary: Accept-Version` header.
 
 A host marks a major it still serves but plans to stop serving deprecated, and gives the
-date it stops being served:
+date it was deprecated and the date it stops being served:
 
 ```ruby
-HubKernel::Api::MajorVersion.new(version: "1.4.0", deprecated: true, sunset: Date.new(2027, 3, 31))
+HubKernel::Api::MajorVersion.new(version: "1.4.0", deprecated: true, deprecated_on: Date.new(2026, 9, 30), sunset: Date.new(2027, 3, 31))
 ```
 
 Every answer at a major older than the newest listed carries an `Api-Newest-Version` header
 giving the newest major's full version. Every answer at a deprecated major also carries a
-`Deprecation: true` header and a `Sunset` header giving its date as an HTTP date:
+`Deprecation` header giving the date it was deprecated as `@` and the Unix seconds of that
+date's midnight UTC, as RFC 9745 defines it, and a `Sunset` header giving the date it stops
+being served as an HTTP date:
 
 ```
 Api-Version: 1.4.0
 Api-Newest-Version: 2.0.1
-Deprecation: true
+Deprecation: @1790726400
 Sunset: Wed, 31 Mar 2027 00:00:00 GMT
 ```
 
-An answer at a deprecated major given no `sunset:` date carries no `Sunset` header. An
-answer at the newest major carries no `Api-Newest-Version` header, and carries no
-`Deprecation` or `Sunset` header unless the newest major is itself deprecated. The headers
-never change an answer's body.
+An answer at a deprecated major given no `deprecated_on:` date carries no `Deprecation`
+header, and one given no `sunset:` date carries no `Sunset` header. An answer at the newest
+major carries no `Api-Newest-Version` header, and carries no `Deprecation` or `Sunset`
+header unless the newest major is itself deprecated. The headers never change an answer's
+body.
 
 A call naming a major the host does not list is answered with status 406 and no
 `Api-Version` header. The controller raises `HubKernel::Api::UnservedMajorError` and
