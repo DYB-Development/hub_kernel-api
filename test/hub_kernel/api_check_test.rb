@@ -137,4 +137,11 @@ class HubKernel::ApiCheckTest < ActiveSupport::TestCase
 
     assert_raises(HubKernel::Api::UnservableHubError, match: "The listed version 2.1 is not in major.minor.patch form") { HubKernel::Api.check! }
   end
+
+  test "an earlier answer is checked against the listed majors without stopping at a version given as a number" do
+    HubKernel::Api.hubs = [ Larder ]
+    HubKernel::Api.versions = [ HubKernel::Api::MajorVersion.new(version: "1.0.0"), HubKernel::Api::MajorVersion.new(version: 2.1) ]
+
+    assert_raises(HubKernel::Api::UnservableHubError, match: "HubKernel::ApiCheckTest::Larder declares an earlier answer to count_jars for major 7, which the host does not list") { HubKernel::Api.check! }
+  end
 end
