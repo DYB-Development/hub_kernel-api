@@ -154,6 +154,30 @@ of the major it describes:
 A host that lists no majors gives no `version` key. The root address listing refuses a
 major the host does not list with status 406, as a call does.
 
+## Description files
+
+A host writes one JSON description file for each major it lists:
+
+```sh
+bin/rails hub_kernel_api:describe
+```
+
+The task writes each major's file into the host's `api_descriptions` folder, named after
+the major, such as `api_descriptions/v1.json`. A file gives the major's full version and
+every served hub's methods, keyed by the hub's address, each with its values, its verb and
+its answer shape at that major, as the root address listing gives them:
+
+```json
+{ "version": "1.4.0", "hubs": { "supplies": [{ "name": "shelf_of", "takes": ["item"], "verb": "GET", "answer_shape": { "type": "object", "required": ["shelf"] } }] } }
+```
+
+Unlike a listing, a file holds every served method, whatever any caller may call, and it
+is written without a request, so it names no caller. Running the task again with no change
+to any hub writes identical files, so the host can commit them. A client repo copies a
+major's file in and checks a recorded answer against a method's `answer_shape` with a JSON
+Schema library, without reaching a running host. A host that lists no majors writes no
+files.
+
 ## Installation
 
 ```ruby
